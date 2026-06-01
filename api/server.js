@@ -4,8 +4,12 @@ import userRouter from './routes/users.js'
 import categoryRouter from './routes/categories.js'
 import serviceRouter from './routes/services.js'
 import searchRouter from './routes/search.js'
+import cors from 'cors'
 
 const app = express()
+
+app.use(cors())
+app.use(express.json())
 
 
 app.get('/', (req, res) => {
