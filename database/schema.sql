@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS services(
     search_vector TSVECTOR
 );
 
-CREATE FUNCTION update_search_vector()
+CREATE OR REPLACE FUNCTION update_search_vector()
 RETURNS TRIGGER AS $$
 BEGIN
       NEW.search_vector = to_tsvector('english', coalesce(NEW.name, '') || ' ' || coalesce(NEW.description, ''));
@@ -56,7 +56,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE FUNCTION update_updated_at()
+CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
      NEW.updated_at = NOW();
@@ -81,3 +81,5 @@ CREATE TRIGGER trigger_update_search_vector
 BEFORE UPDATE OR INSERT ON services
 FOR EACH ROW EXECUTE FUNCTION update_search_vector();
 
+CREATE INDEX idx_services_search ON services USING GIN(search_vector);
+CREATE INDEX idx_services_trgm ON services USING GIN(name gin_trgm_ops);
