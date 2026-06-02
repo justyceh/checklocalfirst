@@ -83,3 +83,38 @@ FOR EACH ROW EXECUTE FUNCTION update_search_vector();
 
 CREATE INDEX idx_services_search ON services USING GIN(search_vector);
 CREATE INDEX idx_services_trgm ON services USING GIN(name gin_trgm_ops);
+
+-- Fuzzy search
+
+
+CREATE OR REPLACE FUNCTION search_services_fuzzy(search_term TEXT)
+RETURNS TABLE (
+    id INTEGER,
+    business_id INTEGER,
+    category_id INTEGER,
+    name VARCHAR,
+    description TEXT,
+    price NUMERIC,
+    search_vector TSVECTOR,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    similarity FLOAT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        s.id,
+        s.business_id,
+        s.category_id,
+        s.name,
+        s.description,
+        s.price,
+        s.search_vector,
+        s.created_at,
+        s.updated_at,
+        similarity(s.name, search_term) AS similarity
+    FROM services s
+    WHERE similarity(s.name, search_term) > 0.15
+    ORDER BY similarity DESC;
+END;
+$$ LANGUAGE plpgsql;
