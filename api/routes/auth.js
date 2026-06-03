@@ -1,5 +1,6 @@
 import express from 'express'
 import { supabaseAdmin, supabase } from '../dbconnect.js'
+import { authMiddleware } from '../middleware/auth.js'
 
 const router = express.Router()
 
@@ -40,7 +41,7 @@ router.post('/signup/user', async (req, res) => {
     res.status(201).json({message: 'Account successfully created'});
 })
 
-router.post('/admin/create-user/:account_type', async (req, res) => {
+router.post('/admin/create-user/:account_type', authMiddleware, async (req, res) => {
     const firstname = req.body.firstname;
     const lastname = req.body.lastname;
     const email = req.body.email;
@@ -115,5 +116,30 @@ router.post('/signup/business', async (req, res) => {
 
     return res.status(201).json({message: 'User and Business account successfully created'});
 
+})
+
+router.post('/login', async (req, res) => {
+    const email = req.body.email;
+    const password = req.body.password;
+
+    const {data, error} = await supabase.auth.signInWithPassword({email: email, password: password});
+
+    if(error){
+        return res.status(401).json({error: error.message});
+    }
+
+    const {data: userData, error: userError} = await supabase.from('users').select('account_type').eq('user_id', data.user.id).single();
+
+    if(userError){
+        return res.status(500).json({error: userError.message});
+    }
+
+    return res.status(200).json({
+        message: 'Successful log in',
+        access_token: data.session.access_token,
+        user_id: data.user.id,
+        email: data.user.email,
+        accountType: userData.account_type
+    });
 })
 export default router

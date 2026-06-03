@@ -6,17 +6,37 @@ const router = express.Router()
 router.get('/', async (req, res) => {
     console.log("Got Searching route");
     const searchQuery = req.query.q;
+    const category = req.query.category;
+    let categoryId = '';
+    if(category){
+        const {data, error} = await supabase.from('categories').select('id').eq('slug', category).single();
+        if(error){
+            return res.status(500).json({error: error.message});
+        }
+        categoryId = data.id;
+    }
 
     if(searchQuery === "" || searchQuery === undefined){
         return res.status(400).json({message: "No search term provided"});
     }
 
-    let { data, error} = await supabase.from('services').select('*, businesses(*)').textSearch('search_vector' , `${searchQuery}`);
+    let query = supabase.from('services').select('*, businesses(*)').textSearch('search_vector' , `${searchQuery}`);
+
+    if(categoryId){
+        query = query.eq('category_id', categoryId);
+    }
+
+    let { data, error} = await query;
 
     if(error){return res.status(500).json({error: error.message})}
 
     if(data.length === 0){
-        ({data, error} = await supabase.from('services').select('*, businesses(*)').ilike('name', `%${searchQuery}%`));
+        let fallbackquery = supabase.from('services').select('*, businesses(*)').ilike('name', `%${searchQuery}%`);
+        if(categoryId){
+            fallbackquery = fallbackquery.eq('category_id', categoryId);
+        }
+
+        ({data, error} = await fallbackquery);
     }
 
     if(error){return res.status(500).json({error: error.message})}

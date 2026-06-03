@@ -3,9 +3,14 @@ import { supabase } from '../dbconnect.js'
 
 const router = express.Router()
 
-router.get('/', (req, res) => {
-    console.log("Got services route");
-    res.send("Services Route");
+router.get('/', async (req, res) => {
+    const {data, error} = await supabase.from('services').select('*');
+
+    if(error){
+        return res.status(500).json({error: error.message});
+    }
+
+    return res.status(200).json({message: "Got services successfully", data: data});
 })
 
 export default router
