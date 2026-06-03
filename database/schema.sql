@@ -97,7 +97,7 @@ RETURNS TABLE (
     search_vector TSVECTOR,
     created_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ,
-    similarity FLOAT
+    similarity REAL
 ) AS $$
 BEGIN
     RETURN QUERY
