@@ -1,9 +1,9 @@
 -- USERS
-INSERT INTO users (first_name, last_name, password_hash, email, phone, account_type)
+INSERT INTO users (first_name, last_name, email, phone, account_type)
 VALUES 
-('Tessa', 'Miller', 'fakehash', 'thenestreno@gmail.com', '7752848841', 'business'),
-('Samantha', 'Stremmel', 'fakehash', 'hello@sierrawatergardens.com', '7753455806', 'business'),
-('Stephanie', 'Cochrane', 'fakehash', 'hello@thewastelessshop.com', '7752251045', 'business');
+('Tessa', 'Miller', 'thenestreno@gmail.com', '7752848841', 'business'),
+('Samantha', 'Stremmel', 'hello@sierrawatergardens.com', '7753455806', 'business'),
+('Stephanie', 'Cochrane', 'hello@thewastelessshop.com', '7752251045', 'business');
 
 -- CATEGORIES
 INSERT INTO categories (name, slug)
