@@ -31,13 +31,13 @@ router.post('/signup/user', async (req, res) => {
         return res.status(500).json({error: error.message});
     }
 
-    const {data: userData, error: userError} = await supabase.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, email: email, phone: phone, account_type: accountType});
+    const {data: userData, error: userError} = await supabase.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, email: email, phone: phone, account_type: accountType}).select();
     
     if(userError){
         return res.status(500).json({error: userError.message});
     }
 
-    res.status(201).json({message: 'Account successfully created', user: userData});
+    res.status(201).json({message: 'Account successfully created'});
 })
 
 router.post('/admin/create-user/:account_type', async (req, res) => {
@@ -60,14 +60,14 @@ router.post('/admin/create-user/:account_type', async (req, res) => {
         return res.status(500).json({error: error.message});
     }
 
-    const {data: userData, error: userError} = await supabase.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, email: email, phone: phone, account_type: accountType});
+    const {data: userData, error: userError} = await supabase.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, email: email, phone: phone, account_type: accountType}).select();
     
 
     if(userError){
         return res.status(500).json({error: userError.message});
     }
 
-    res.status(201).json({message: 'User succesfully created', user: userData});
+    res.status(201).json({message: 'User succesfully created'});
 
 })
 
@@ -101,13 +101,13 @@ router.post('/signup/business', async (req, res) => {
         return res.status(500).json({error: error.message});
     }
 
-    const {data: userData, error: userError} = await supabase.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, phone: businessphone, email: businessemail, account_type: 'business'});
+    const {data: userData, error: userError} = await supabase.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, phone: businessphone, email: businessemail, account_type: 'business'}).select();
 
     if(userError){
         return res.status(500).json({error: userError.message});
     }
 
-    const {data: businessData, error: businessError} = await supabase.from('businesses').insert({owner_user_id: data.user.id, name: businessname, description: businessdescription, address: businessaddress, city: city, state: state, zip: zip, phone: businessphone, email: businessemail, slug: slug});
+    const {data: businessData, error: businessError} = await supabase.from('businesses').insert({owner_user_id: data.user.id, name: businessname, description: businessdescription, address: businessaddress, city: city, state: state, zip: zip, phone: businessphone, email: businessemail, slug: slug}).select();
 
     if(businessError){
         return res.status(500).json({error: businessError.message});
