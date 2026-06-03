@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE IF NOT EXISTS users(
-    user_id SERIAL PRIMARY KEY,
+    user_id UUID PRIMARY KEY,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS categories(
 
 CREATE TABLE IF NOT EXISTS businesses(
     id SERIAL PRIMARY KEY,
-    owner_user_id INTEGER REFERENCES users(user_id),
+    owner_user_id UUID REFERENCES users(user_id),
     name VARCHAR(100) NOT NULL,
     description TEXT,
     address VARCHAR(255),
