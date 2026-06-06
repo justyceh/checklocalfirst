@@ -20,7 +20,10 @@ router.get('/', async (req, res) => {
         return res.status(400).json({message: "No search term provided"});
     }
 
-    let query = supabase.from('services').select('*, businesses(*)').textSearch('search_vector' , `${searchQuery}`);
+    
+    const formattedQuery = searchQuery.trim().split(/\s+/).join(' & ');
+    let query = supabase.from('services').select('*, businesses(*)').textSearch('search_vector', formattedQuery);
+
 
     if(categoryId){
         query = query.eq('category_id', categoryId);
