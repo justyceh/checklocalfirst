@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
     if(error){return res.status(500).json({error: error.message})}
 
     if(data.length === 0){
-        ({data, error} = await supabase.rpc('search_services_fuzzy', { search_term: searchQuery }));
+        ({data, error} = await supabase.rpc('search_services_fuzzy', { search_term: searchQuery, category_id: categoryId || null }));
     }
 
     if(error){return res.status(500).json({error: error.message})}

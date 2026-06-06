@@ -142,4 +142,17 @@ router.post('/login', async (req, res) => {
         accountType: userData.account_type
     });
 })
+
+router.post('/logout', authMiddleware, async (req, res) => {
+
+    const {error} = await supabase.auth.signOut();
+
+    if(error){
+
+        return res.status(500).json({error: error.message});
+    }
+
+    return res.status(200).json({message: 'User successfully signed out'});
+
+})
 export default router

@@ -86,7 +86,7 @@ CREATE INDEX idx_services_trgm ON services USING GIN(name gin_trgm_ops);
 -- Fuzzy search
 
 
-CREATE OR REPLACE FUNCTION search_services_fuzzy(search_term TEXT)
+CREATE OR REPLACE FUNCTION search_services_fuzzy(search_term TEXT, filter_category_id INTEGER DEFAULT NULL)
 RETURNS TABLE (
     id INTEGER,
     business_id INTEGER,
@@ -114,6 +114,7 @@ BEGIN
         similarity(s.name, search_term) AS similarity
     FROM services s
     WHERE similarity(s.name, search_term) > 0.15
+    AND (filter_category_id IS NULL OR s.category_id = filter_category_id)
     ORDER BY similarity DESC;
 END;
 $$ LANGUAGE plpgsql;
