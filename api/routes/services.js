@@ -4,7 +4,7 @@ import { supabase } from '../dbconnect.js'
 const router = express.Router()
 
 router.get('/', async (req, res) => {
-    const {data, error} = await supabase.from('services').select('*');
+    const {data, error} = await supabase.from('services').select('*, businesses(name, slug)');
 
     if(error){
         return res.status(500).json({error: error.message});
