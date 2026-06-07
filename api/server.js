@@ -14,8 +14,7 @@ app.use(express.json())
 
 
 app.get('/', (req, res) => {
-    res.send('Hello World')
-    console.log("Check Local First API");
+    res.send('Check Local First API');
 })
 
 app.use('/businesses', businessRouter)
