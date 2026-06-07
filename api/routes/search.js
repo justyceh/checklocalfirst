@@ -45,8 +45,13 @@ router.get('/', async (req, res) => {
     if(error){return res.status(500).json({error: error.message})}
 
     if(data.length === 0){
-        ({data, error} = await supabase.rpc('search_services_fuzzy', { search_term: searchQuery, filter_category_id: categoryId || null }));
-    }
+    const { data: fuzzyIds, error: fuzzyError } = await supabase.rpc('search_services_fuzzy', { search_term: searchQuery, filter_category_id: categoryId || null });
+    
+    if(fuzzyError){ return res.status(500).json({error: fuzzyError.message}) }
+
+    const ids = fuzzyIds.map(r => r.id);
+    ({ data, error } = await supabase.from('services').select('*, businesses(*)').in('id', ids));
+}
 
     if(error){return res.status(500).json({error: error.message})}
 
