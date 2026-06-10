@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
     }
 
     // Full three-tier text search (with optional category filter)
-    const formattedQuery = searchQuery.trim().split(/\s+/).join(' & ');
+    const formattedQuery = searchQuery.trim().replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).join(' & ');
     let query = supabase.from('services').select('*, businesses(*)').textSearch('search_vector', formattedQuery);
     if (categoryId) query = query.eq('category_id', categoryId);
 
