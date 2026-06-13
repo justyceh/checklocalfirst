@@ -154,20 +154,23 @@ router.put('/:slug', authMiddleware, async (req, res) => {
 
 router.delete('/:slug', authMiddleware, async (req, res) => {
     const slug = req.params.slug;
+    console.log('1. Delete hit, slug:', slug);
+    console.log('2. Requesting user id:', req.user.id);
 
     const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id').eq('slug', slug).single();
+    console.log('3. Business lookup result:', businessData, businessError);
 
     if(businessError || !businessData){
         return res.status(404).json({error: 'Could not find business'});
     }
 
+    console.log('4. Owner check — business owner:', businessData.owner_user_id, '| requesting user:', req.user.id);
     if(businessData.owner_user_id !== req.user.id){
         return res.status(403).json({error: 'Not authorized to delete this business'});
     }
 
-
-
     const {data, error} = await supabase.from('businesses').delete().eq('slug', slug);
+    console.log('5. Delete result:', data, error);
 
     if(error){
         return res.status(500).json({error: error.message});
@@ -175,5 +178,3 @@ router.delete('/:slug', authMiddleware, async (req, res) => {
 
     return res.status(200).json({message: `Business successfully deleted`})
 })
-
-export default router
