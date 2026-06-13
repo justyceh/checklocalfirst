@@ -1,5 +1,5 @@
 import express from 'express'
-import { supabase } from '../dbconnect.js'
+import { supabase, supabaseAdmin } from '../dbconnect.js'
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router()
@@ -165,21 +165,23 @@ router.delete('/:slug', authMiddleware, async (req, res) => {
         return res.status(403).json({error: 'Not authorized to delete this business'});
     }
 
-    // Delete services first
+    // 1. Delete services
     const {error: servicesError} = await supabase.from('services').delete().eq('business_id', businessData.id);
+    if(servicesError) return res.status(500).json({error: servicesError.message});
 
-    if(servicesError){
-        return res.status(500).json({error: servicesError.message});
-    }
+    // 2. Delete business
+    const {error: bizError} = await supabase.from('businesses').delete().eq('slug', slug);
+    if(bizError) return res.status(500).json({error: bizError.message});
 
-    // Now safe to delete the business
-    const {error} = await supabase.from('businesses').delete().eq('slug', slug);
+    // 3. Delete from users table
+    const {error: userError} = await supabase.from('users').delete().eq('user_id', businessData.owner_user_id);
+    if(userError) return res.status(500).json({error: userError.message});
 
-    if(error){
-        return res.status(500).json({error: error.message});
-    }
+    // 4. Delete from Supabase Auth
+    const {error: authError} = await supabaseAdmin.auth.admin.deleteUser(businessData.owner_user_id);
+    if(authError) return res.status(500).json({error: authError.message});
 
-    return res.status(200).json({message: `Business successfully deleted`});
+    return res.status(200).json({message: 'Business successfully deleted'});
 })
 
 export default router
