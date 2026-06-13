@@ -178,3 +178,5 @@ router.delete('/:slug', authMiddleware, async (req, res) => {
 
     return res.status(200).json({message: `Business successfully deleted`})
 })
+
+export default router
