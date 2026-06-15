@@ -60,6 +60,12 @@ router.put('/:slug/services/:id', authMiddleware, async (req, res) => {
         return res.status(403).json({message: 'Unauthorized can not update businesses services'});
     }
 
+    if (!category_id) {
+
+    return res.status(400).json({ error: 'category_id is required' });
+    
+    }
+
     const {data, error} = await supabase.from('services').update({name, description, price, category_id}).eq('id', id);
 
     if(error){
@@ -86,6 +92,12 @@ router.post('/:slug/services', authMiddleware, async (req, res) => {
 
     if(req.user.id !== businessData.owner_user_id){
         return res.status(403).json({message: 'Unauthorized can not add service to business'});
+    }
+
+    if (!category_id) {
+
+    return res.status(400).json({ error: 'category_id is required' });
+
     }
 
     const {data, error} = await supabase.from('services').insert({business_id: businessData.id, name, description, price, category_id});
