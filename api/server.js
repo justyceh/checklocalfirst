@@ -5,6 +5,7 @@ import categoryRouter from './routes/categories.js'
 import serviceRouter from './routes/services.js'
 import searchRouter from './routes/search.js'
 import authRouter from './routes/auth.js'
+import favoriteRouter from './routes/favorites.js'
 import cors from 'cors'
 
 const app = express()
@@ -23,6 +24,7 @@ app.use('/services', serviceRouter)
 app.use('/categories', categoryRouter)
 app.use('/search', searchRouter)
 app.use('/auth', authRouter)
+app.use('/favorites', favoriteRouter)
 
 
 app.listen(3000, () => {
