@@ -143,3 +143,13 @@ Pretty simple we just add a image to the folder and make sure its name is the sa
 - Make sure website uses a consistent color scheme, make it easy to change by using global.css file, make sure it uses consistent font
 
 - Design website so that it looks vintage and professional
+
+
+### Most recent update
+
+- Pointed wix web servers to point to the vercel hosting so the site i built is currently displayed at checklocalfirst.com
+
+- Implemented basic admin dashboard to view businesses, suspend them or delete them
+
+- Built backend admin routes
+
