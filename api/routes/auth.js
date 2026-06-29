@@ -1,6 +1,6 @@
 import express from 'express'
 import { supabaseAdmin, supabase } from '../dbconnect.js'
-import { authMiddleware } from '../middleware/auth.js'
+import { authAdminMiddleware, authMiddleware } from '../middleware/auth.js'
 
 const router = express.Router()
 
@@ -41,13 +41,17 @@ router.post('/signup/user', async (req, res) => {
     res.status(201).json({message: 'Account successfully created'});
 })
 
-router.post('/admin/create-user/:account_type', authMiddleware, async (req, res) => {
+router.post('/admin/create-user/:account_type', authMiddleware, authAdminMiddleware, async (req, res) => {
     const firstname = req.body.firstname;
     const lastname = req.body.lastname;
     const email = req.body.email;
     const password = req.body.password;
     const phone = req.body.phone;
     const accountType = req.params.account_type;
+
+    if(accountType != 'user' && accountType != 'admin' && accountType != 'business'){
+        return res.status(400).json({message: 'Error creating account'});
+    }
 
     const {data, error} = await supabaseAdmin.auth.admin.createUser({
         email: email,
