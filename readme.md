@@ -124,6 +124,8 @@ setting it up on checklocalfirstgmail so no problems there
 - For premium users they must contact our team with a photo directly after signing up to have their photo uploaded onto the page
 Pretty simple we just add a image to the folder and make sure its name is the same as the businesses unique slug
 
+- Design certain things so they are easy for tessa to change later
+
 ### Features to implement
 
 - Analytic tracking on business button clicks for calls, emails, individual page listing, and maybe even address, do not link to other websites for saftey
@@ -143,6 +145,8 @@ Pretty simple we just add a image to the folder and make sure its name is the sa
 - Make sure website uses a consistent color scheme, make it easy to change by using global.css file, make sure it uses consistent font
 
 - Design website so that it looks vintage and professional
+
+- AI powered search?
 
 
 ### Most recent update
