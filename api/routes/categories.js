@@ -1,5 +1,6 @@
 import express from 'express'
 import { supabase } from '../dbconnect.js'
+import { authAdminMiddleware, authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router()
 
@@ -13,7 +14,7 @@ router.get('/', async (req, res) => {
     return res.status(200).json({message: "Got categories successfully", data: data});
 })
 
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, authAdminMiddleware, async (req, res) => {
     const { name, slug } = req.body;
 
     if (!name || !slug) {
