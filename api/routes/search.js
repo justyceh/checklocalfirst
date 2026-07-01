@@ -24,23 +24,22 @@ router.get('/', async (req, res) => {
     if (!hasQuery) {
         const { data, error } = await supabase
             .from('services')
-            .select('*, businesses!inner(*)')
-            .eq('category_id', categoryId)
-            .eq('businesses.status', 'active');
+            .select('*, businesses(*)')
+            .eq('category_id', categoryId);
         if (error) return res.status(500).json({ error: error.message });
         return res.json(data);
     }
 
     // Full three-tier text search (with optional category filter)
     const formattedQuery = searchQuery.trim().replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).join(' & ');
-    let query = supabase.from('services').select('*, businesses!inner(*)').textSearch('search_vector', formattedQuery).eq('businesses.status', 'active');
+    let query = supabase.from('services').select('*, businesses(*)').textSearch('search_vector', formattedQuery);
     if (categoryId) query = query.eq('category_id', categoryId);
 
     let { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
 
     if (data.length === 0) {
-        let fallbackQuery = supabase.from('services').select('*, businesses!inner(*)').ilike('name', `%${searchQuery}%`).eq('businesses.status', 'active');
+        let fallbackQuery = supabase.from('services').select('*, businesses(*)').ilike('name', `%${searchQuery}%`);
         if (categoryId) fallbackQuery = fallbackQuery.eq('category_id', categoryId);
         ({ data, error } = await fallbackQuery);
     }
@@ -51,7 +50,7 @@ router.get('/', async (req, res) => {
         const { data: fuzzyIds, error: fuzzyError } = await supabase.rpc('search_services_fuzzy', { search_term: searchQuery, filter_category_id: categoryId || null });
         if (fuzzyError) return res.status(500).json({ error: fuzzyError.message });
         const ids = fuzzyIds.map(r => r.id);
-        ({ data, error } = await supabase.from('services').select('*, businesses!inner(*)').in('id', ids).eq('businesses.status', 'active'));
+        ({ data, error } = await supabase.from('services').select('*, businesses(*)').in('id', ids));
     }
 
     if (error) return res.status(500).json({ error: error.message });
