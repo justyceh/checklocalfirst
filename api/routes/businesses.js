@@ -12,6 +12,16 @@ router.get('/', async (req, res) => {
     res.json(data);
 })
 
+router.get('/me', authMiddleware, async (req, res) => {
+    const { data, error } = await supabase.from('businesses').select('*').eq('owner_user_id', req.user.id).single();
+
+    if(error){
+        return res.status(404).json({error: 'Business not found'});
+    }
+
+    res.json(data);
+})
+
 router.get('/:slug', async (req, res) => {
     const slug = req.params.slug;
     const { data, error } = await supabase.from('businesses').select('*').eq('slug', slug).eq('status', 'active').single();
