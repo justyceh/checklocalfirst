@@ -112,7 +112,7 @@ router.post('/signup/business', async (req, res) => {
         return res.status(500).json({error: userError.message});
     }
 
-    const {data: businessData, error: businessError} = await supabase.from('businesses').insert({owner_user_id: data.user.id, name: businessname, description: businessdescription, address: businessaddress, city: city, state: state, zip: zip, phone: businessphone, email: businessemail, slug: slug}).select();
+    const {data: businessData, error: businessError} = await supabase.from('businesses').insert({owner_user_id: data.user.id, name: businessname, description: businessdescription, address: businessaddress, city: city, state: state, zip: zip, phone: businessphone, email: businessemail, slug: slug, status: 'suspended'}).select();
 
     if(businessError){
         return res.status(500).json({error: businessError.message});
