@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
     const hasQuery = searchQuery !== "" && searchQuery !== undefined;
 
     if (!hasQuery && !category) {
-        return res.status(400).json({ message: "No search term provided" });
+        return res.json([]);
     }
 
     let categoryId = '';
