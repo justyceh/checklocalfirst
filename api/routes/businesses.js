@@ -1,6 +1,14 @@
 import express from 'express'
 import { supabase, supabaseAdmin } from '../dbconnect.js'
 import { authMiddleware } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import {
+    businessSlugParamSchema,
+    updateBusinessSchema,
+    createServiceSchema,
+    updateServiceSchema,
+    serviceIdParamSchema
+} from '../schemas/businessSchemas.js';
 
 const router = express.Router()
 
@@ -22,8 +30,8 @@ router.get('/me', authMiddleware, async (req, res) => {
     res.json(data);
 })
 
-router.get('/:slug', async (req, res) => {
-    const slug = req.params.slug;
+router.get('/:slug', validate(businessSlugParamSchema), async (req, res) => {
+    const { slug } = req.validated.params;
     const { data, error } = await supabase.from('businesses').select('*').eq('slug', slug).eq('status', 'approved').single();
 
     if(error){return res.status(500).json({ error: error.message })}
@@ -31,8 +39,8 @@ router.get('/:slug', async (req, res) => {
     res.json(data);
 })
 
-router.get('/:slug/services', async (req, res) => {
-    const slug = req.params.slug;
+router.get('/:slug/services', validate(businessSlugParamSchema), async (req, res) => {
+    const { slug } = req.validated.params;
 
     const {data, error} = await supabase.from('businesses').select('id').eq('slug', slug).single();
 
@@ -52,12 +60,9 @@ router.get('/:slug/services', async (req, res) => {
     return res.status(200).json({data: businessData});
 })
 
-router.put('/:slug/services/:id', authMiddleware, async (req, res) => {
-    const slug = req.params.slug;
-    const id = req.params.id;
-    const name = req.body.name;
-    const description = req.body.description;
-    const category_id = req.body.category_id;
+router.put('/:slug/services/:id', authMiddleware, validate(updateServiceSchema), async (req, res) => {
+    const { slug, id } = req.validated.params;
+    const { name, description, category_id } = req.validated.body;
 
     const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id').eq('slug', slug).single();
 
@@ -69,12 +74,6 @@ router.put('/:slug/services/:id', authMiddleware, async (req, res) => {
         return res.status(403).json({message: 'Unauthorized can not update businesses services'});
     }
 
-    if (!category_id) {
-
-    return res.status(400).json({ error: 'category_id is required' });
-    
-    }
-
     const {data, error} = await supabase.from('services').update({name, description, category_id}).eq('id', id);
 
     if(error){
@@ -82,15 +81,11 @@ router.put('/:slug/services/:id', authMiddleware, async (req, res) => {
     }
 
     return res.status(200).json({message: 'Service for business updated'});
-
-    
 })
 
-router.post('/:slug/services', authMiddleware, async (req, res) => {
-    const slug = req.params.slug;
-    const name = req.body.name;
-    const description = req.body.description;
-    const category_id = req.body.category_id;
+router.post('/:slug/services', authMiddleware, validate(createServiceSchema), async (req, res) => {
+    const { slug } = req.validated.params;
+    const { name, description, category_id } = req.validated.body;
 
     const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id, id').eq('slug', slug).single();
 
@@ -102,12 +97,6 @@ router.post('/:slug/services', authMiddleware, async (req, res) => {
         return res.status(403).json({message: 'Unauthorized can not add service to business'});
     }
 
-    if (!category_id) {
-
-    return res.status(400).json({ error: 'category_id is required' });
-
-    }
-
     const {data, error} = await supabase.from('services').insert({business_id: businessData.id, name, description, category_id});
 
     if(error){
@@ -117,10 +106,8 @@ router.post('/:slug/services', authMiddleware, async (req, res) => {
     return res.status(201).json({message: 'Service for business added'});
 })
 
-router.delete('/:slug/services/:id', authMiddleware, async (req, res) => {
-    const slug = req.params.slug;
-    const id = req.params.id;
-
+router.delete('/:slug/services/:id', authMiddleware, validate(serviceIdParamSchema), async (req, res) => {
+    const { slug, id } = req.validated.params;
 
     const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id').eq('slug', slug).single();
 
@@ -141,16 +128,9 @@ router.delete('/:slug/services/:id', authMiddleware, async (req, res) => {
     return res.status(200).json({message: 'Service for business deleted'});
 })
 
-router.put('/:slug', authMiddleware, async (req, res) => {
-    const slug = req.params.slug;
-    const name = req.body.name;
-    const description = req.body.description;
-    const address = req.body.address;
-    const city = req.body.city;
-    const state = req.body.state;
-    const zip = req.body.zip;
-    const phone = req.body.phone;
-    const email = req.body.email;
+router.put('/:slug', authMiddleware, validate(updateBusinessSchema), async (req, res) => {
+    const { slug } = req.validated.params;
+    const { name, description, address, city, state, zip, phone, email } = req.validated.body;
 
     const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id').eq('slug', slug).single();
 
@@ -168,12 +148,11 @@ router.put('/:slug', authMiddleware, async (req, res) => {
         return res.status(500).json({error: error.message});
     }
 
-    return res.status(200).json({message: `${name} successfully updated`});
-
+    return res.status(200).json({message: `${name ?? businessData.name} successfully updated`});
 })
 
-router.delete('/:slug', authMiddleware, async (req, res) => {
-    const slug = req.params.slug;
+router.delete('/:slug', authMiddleware, validate(businessSlugParamSchema), async (req, res) => {
+    const { slug } = req.validated.params;
 
     const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id, id').eq('slug', slug).single();
 
@@ -185,19 +164,15 @@ router.delete('/:slug', authMiddleware, async (req, res) => {
         return res.status(403).json({error: 'Not authorized to delete this business'});
     }
 
-    // 1. Delete services
     const {error: servicesError} = await supabase.from('services').delete().eq('business_id', businessData.id);
     if(servicesError) return res.status(500).json({error: servicesError.message});
 
-    // 2. Delete business
     const {error: bizError} = await supabase.from('businesses').delete().eq('slug', slug);
     if(bizError) return res.status(500).json({error: bizError.message});
 
-    // 3. Delete from users table
     const {error: userError} = await supabase.from('users').delete().eq('user_id', businessData.owner_user_id);
     if(userError) return res.status(500).json({error: userError.message});
 
-    // 4. Delete from Supabase Auth
     const {error: authError} = await supabaseAdmin.auth.admin.deleteUser(businessData.owner_user_id);
     if(authError) return res.status(500).json({error: authError.message});
 
