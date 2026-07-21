@@ -2,7 +2,8 @@ import express from 'express'
 import { supabase } from '../dbconnect.js'
 import { authMiddleware, authAdminMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { updateOwnUserSchema, userIdParamSchema } from '../schemas/userSchemas.js';
+import { updateOwnUserSchema } from '../schemas/userSchemas.js';
+import { userIdParamSchema } from '../schemas/adminSchemas.js';
 
 const router = express.Router()
 
