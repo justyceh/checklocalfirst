@@ -1,16 +1,13 @@
 import express from 'express'
 import { supabase } from '../dbconnect.js'
 import { authMiddleware } from '../middleware/auth.js';
-
+import { validate } from '../middleware/validate.js';
+import { landingSignupSchema } from '../schemas/signupSchemas.js';
 
 const router = express.Router()
 
-router.post('/', async (req, res) => {
-    const { name, email, source } = req.body;
-
-    if (!name || !email || !source) {
-        return res.status(400).json({ message: "Missing required fields" });
-    }
+router.post('/', validate(landingSignupSchema), async (req, res) => {
+    const { name, email, source } = req.validated.body;
 
     const { data, error } = await supabase
         .from('landing_signups')
