@@ -1,6 +1,8 @@
 import express from 'express'
 import { supabaseAdmin, supabase } from '../dbconnect.js'
 import { authMiddleware, authAdminMiddleware } from '../middleware/auth.js'
+import { validate } from '../middleware/validate.js'
+import { businessIdParamSchema, userIdParamSchema, updateBusinessStatusSchema } from '../schemas/adminSchemas.js'
 
 const router = express.Router()
 
@@ -17,8 +19,8 @@ router.get('/businesses', async (req, res) => {
     res.status(200).json(data);
 })
 
-router.get('/businesses/:id', async (req, res) => {
-    const id = req.params.id;
+router.get('/businesses/:id', validate(businessIdParamSchema), async (req, res) => {
+    const { id } = req.validated.params;
 
     const { data, error } = await supabase.from('businesses').select('*').eq('id', id).single();
 
@@ -29,24 +31,9 @@ router.get('/businesses/:id', async (req, res) => {
     res.status(200).json(data);
 })
 
-router.patch('/businesses/:id/status', async (req, res) => {
-    const id = req.params.id;
-    const status = req.body.status;
-
-    const allowedStatuses = [
-    'pending',
-    'approved',
-    'suspended',
-    'rejected'
-    ];
-
-    if(!status){
-        return res.status(400).json({error: 'Status is required'});
-    }
-
-    if(!allowedStatuses.includes(status)){
-        return res.status(400).json({error: 'Invalid status value'});
-    }
+router.patch('/businesses/:id/status', validate(updateBusinessStatusSchema), async (req, res) => {
+    const { id } = req.validated.params;
+    const { status } = req.validated.body;
 
     const { data, error } = await supabaseAdmin.from('businesses').update({status}).eq('id', id).select().single();
 
@@ -61,8 +48,8 @@ router.patch('/businesses/:id/status', async (req, res) => {
     return res.status(200).json({message: 'Business status updated'});
 })
 
-router.delete('/businesses/:id', async (req, res) => {
-    const id = req.params.id;
+router.delete('/businesses/:id', validate(businessIdParamSchema), async (req, res) => {
+    const { id } = req.validated.params;
 
     const { data: businessData, error: businessError } = await supabase.from('businesses').select('owner_user_id').eq('id', id).single();
 
@@ -100,8 +87,8 @@ router.get('/users', async (req, res) => {
     res.status(200).json(data);
 })
 
-router.get('/users/:id', async (req, res) => {
-    const id = req.params.id;
+router.get('/users/:id', validate(userIdParamSchema), async (req, res) => {
+    const { id } = req.validated.params;
 
     const { data, error } = await supabase.from('users').select('*').eq('user_id', id).single();
 
@@ -112,8 +99,8 @@ router.get('/users/:id', async (req, res) => {
     res.status(200).json(data);
 })
 
-router.delete('/users/:id', async (req, res) => {
-    const id = req.params.id;
+router.delete('/users/:id', validate(userIdParamSchema), async (req, res) => {
+    const { id } = req.validated.params;
 
     // 1. Self-lockout: can't delete your own admin account
     if (id === req.user.id) {
