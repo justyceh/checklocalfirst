@@ -57,7 +57,6 @@ router.put('/:slug/services/:id', authMiddleware, async (req, res) => {
     const id = req.params.id;
     const name = req.body.name;
     const description = req.body.description;
-    const price = req.body.price;
     const category_id = req.body.category_id;
 
     const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id').eq('slug', slug).single();
@@ -76,7 +75,7 @@ router.put('/:slug/services/:id', authMiddleware, async (req, res) => {
     
     }
 
-    const {data, error} = await supabase.from('services').update({name, description, price, category_id}).eq('id', id);
+    const {data, error} = await supabase.from('services').update({name, description, category_id}).eq('id', id);
 
     if(error){
         return res.status(500).json({error: error.message});
@@ -91,7 +90,6 @@ router.post('/:slug/services', authMiddleware, async (req, res) => {
     const slug = req.params.slug;
     const name = req.body.name;
     const description = req.body.description;
-    const price = req.body.price;
     const category_id = req.body.category_id;
 
     const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id, id').eq('slug', slug).single();
@@ -110,7 +108,7 @@ router.post('/:slug/services', authMiddleware, async (req, res) => {
 
     }
 
-    const {data, error} = await supabase.from('services').insert({business_id: businessData.id, name, description, price, category_id});
+    const {data, error} = await supabase.from('services').insert({business_id: businessData.id, name, description, category_id});
 
     if(error){
         return res.status(500).json({error: error.message});
