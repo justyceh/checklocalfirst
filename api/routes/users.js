@@ -1,6 +1,8 @@
 import express from 'express'
 import { supabase } from '../dbconnect.js'
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, authAdminMiddleware } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { updateOwnUserSchema, userIdParamSchema } from '../schemas/userSchemas.js';
 
 const router = express.Router()
 
@@ -34,14 +36,10 @@ router.get('/me', authMiddleware, async (req, res) => {
     }
 
     return res.status(200).json({message: 'Got users info', data: data});
-
 })
 
-router.put('/me', authMiddleware, async (req, res) => {
-    const first_name = req.body.first_name;
-    const last_name = req.body.last_name;
-    const email = req.body.email;
-    const phone = req.body.phone;
+router.put('/me', authMiddleware, validate(updateOwnUserSchema), async (req, res) => {
+    const { first_name, last_name, email, phone } = req.validated.body;
 
     const {data, error} = await supabase.from('users').update({first_name, last_name, email, phone}).eq('user_id', req.user.id);
 
@@ -50,11 +48,10 @@ router.put('/me', authMiddleware, async (req, res) => {
     }
 
     return res.status(200).json({message: 'Updated user info', data: data});
-
 })
 
-router.get('/:id', async (req, res) => {
-    const id = req.params.id;
+router.get('/:id', authMiddleware, authAdminMiddleware, validate(userIdParamSchema), async (req, res) => {
+    const { id } = req.validated.params;
     const {data, error} = await supabase.from('users').select('*').eq('user_id', id).single();
 
     if(error){
