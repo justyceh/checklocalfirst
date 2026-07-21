@@ -1,0 +1,2 @@
+ALTER TABLE businesses
+ALTER COLUMN status SET DEFAULT 'pending';
