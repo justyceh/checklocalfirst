@@ -1,6 +1,8 @@
 import express from 'express'
 import { supabaseAdmin, supabase } from '../dbconnect.js'
 import { authAdminMiddleware, authMiddleware } from '../middleware/auth.js'
+import { validate } from '../middleware/validate.js'
+import { signupUserSchema, signupBusinessSchema, loginSchema, adminCreateUserSchema } from '../schemas/authSchemas.js'
 
 const router = express.Router()
 
@@ -9,12 +11,8 @@ router.get('/', (req, res) => {
     res.send("Authentication Route");
 })
 
-router.post('/signup/user', async (req, res) => {
-    const firstname = req.body.firstname;
-    const lastname = req.body.lastname;
-    const email = req.body.email;
-    const password = req.body.password;
-    const phone = req.body.phone;
+router.post('/signup/user', validate(signupUserSchema), async (req, res) => {
+    const { firstname, lastname, email, password, phone } = req.validated.body;
     const accountType = 'user';
 
     const {data, error} = await supabase.auth.signUp({
@@ -41,17 +39,9 @@ router.post('/signup/user', async (req, res) => {
     res.status(201).json({message: 'Account successfully created'});
 })
 
-router.post('/admin/create-user/:account_type', authMiddleware, authAdminMiddleware, async (req, res) => {
-    const firstname = req.body.firstname;
-    const lastname = req.body.lastname;
-    const email = req.body.email;
-    const password = req.body.password;
-    const phone = req.body.phone;
-    const accountType = req.params.account_type;
-
-    if(accountType != 'user' && accountType != 'admin' && accountType != 'business'){
-        return res.status(400).json({message: 'Error creating account'});
-    }
+router.post('/admin/create-user/:account_type', authMiddleware, authAdminMiddleware, validate(adminCreateUserSchema), async (req, res) => {
+    const { firstname, lastname, email, password, phone } = req.validated.body;
+    const { account_type: accountType } = req.validated.params;
 
     const {data, error} = await supabaseAdmin.auth.admin.createUser({
         email: email,
@@ -73,21 +63,10 @@ router.post('/admin/create-user/:account_type', authMiddleware, authAdminMiddlew
     }
 
     res.status(201).json({message: 'User succesfully created'});
-
 })
 
-router.post('/signup/business', async (req, res) => {
-    const businessname = req.body.name;
-    const businessdescription = req.body.description;
-    const businessaddress = req.body.address;
-    const businessemail = req.body.email;
-    const businessphone = req.body.phone;
-    const state = req.body.state;
-    const city = req.body.city;
-    const zip = req.body.zip;
-    const firstname = req.body.firstname;
-    const lastname = req.body.lastname;
-    const password = req.body.password;
+router.post('/signup/business', validate(signupBusinessSchema), async (req, res) => {
+    const { name: businessname, description: businessdescription, address: businessaddress, email: businessemail, phone: businessphone, state, city, zip, firstname, lastname, password } = req.validated.body;
 
     const slug = businessname.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
@@ -112,19 +91,17 @@ router.post('/signup/business', async (req, res) => {
         return res.status(500).json({error: userError.message});
     }
 
-    const {data: businessData, error: businessError} = await supabase.from('businesses').insert({owner_user_id: data.user.id, name: businessname, description: businessdescription, address: businessaddress, city: city, state: state, zip: zip, phone: businessphone, email: businessemail, slug: slug, status: 'suspended'}).select();
+    const {data: businessData, error: businessError} = await supabase.from('businesses').insert({owner_user_id: data.user.id, name: businessname, description: businessdescription, address: businessaddress, city: city, state: state, zip: zip, phone: businessphone, email: businessemail, slug: slug}).select();
 
     if(businessError){
         return res.status(500).json({error: businessError.message});
     }
 
     return res.status(201).json({message: 'User and Business account successfully created'});
-
 })
 
-router.post('/login', async (req, res) => {
-    const email = req.body.email;
-    const password = req.body.password;
+router.post('/login', validate(loginSchema), async (req, res) => {
+    const { email, password } = req.validated.body;
 
     const {data, error} = await supabase.auth.signInWithPassword({email: email, password: password});
 
