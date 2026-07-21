@@ -8,3 +8,11 @@ export const createCategorySchema = z.object({
   params: z.object({}).optional(),
   query: z.object({}).optional(),
 });
+
+export const categoryIdParamSchema = z.object({
+  body: z.object({}).optional(),
+  query: z.object({}).optional(),
+  params: z.object({
+    id: z.coerce.number().int().positive('Invalid category id'),
+  }),
+});
