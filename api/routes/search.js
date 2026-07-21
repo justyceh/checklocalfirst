@@ -71,7 +71,7 @@ router.get('/', async (req, res) => {
                 .from('services')
                 .select('*, businesses!inner(*)')
                 .eq('category_id', categoryId)
-                .eq('businesses.status', 'active');
+                .eq('businesses.status', 'approved');
 
             if (error) {
                 return res.status(500).json({ error: error.message });
@@ -90,7 +90,7 @@ router.get('/', async (req, res) => {
             .from('services')
             .select('*, businesses!inner(*)')
             .textSearch('search_vector', formattedQuery)
-            .eq('businesses.status', 'active');
+            .eq('businesses.status', 'approved');
 
         if (categoryId) {
             query = query.eq('category_id', categoryId);
@@ -108,7 +108,7 @@ router.get('/', async (req, res) => {
                 .from('services')
                 .select('*, businesses!inner(*)')
                 .ilike('name', `%${searchQuery}%`)
-                .eq('businesses.status', 'active');
+                .eq('businesses.status', 'approved');
 
             if (categoryId) {
                 fallbackQuery = fallbackQuery.eq(
@@ -150,7 +150,7 @@ router.get('/', async (req, res) => {
                 .from('services')
                 .select('*, businesses!inner(*)')
                 .in('id', ids)
-                .eq('businesses.status', 'active'));
+                .eq('businesses.status', 'approved'));
         }
 
         if (error) {

@@ -5,7 +5,7 @@ import { authMiddleware } from '../middleware/auth.js';
 const router = express.Router()
 
 router.get('/', async (req, res) => {
-    const { data, error} = await supabase.from('businesses').select('*').eq('status', 'active');
+    const { data, error} = await supabase.from('businesses').select('*').eq('status', 'approved');
 
     if(error){return res.status(500).json({error: error.message})}
 
@@ -24,7 +24,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 
 router.get('/:slug', async (req, res) => {
     const slug = req.params.slug;
-    const { data, error } = await supabase.from('businesses').select('*').eq('slug', slug).eq('status', 'active').single();
+    const { data, error } = await supabase.from('businesses').select('*').eq('slug', slug).eq('status', 'approved').single();
 
     if(error){return res.status(500).json({ error: error.message })}
 

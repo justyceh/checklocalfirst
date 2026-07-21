@@ -33,11 +33,22 @@ router.patch('/businesses/:id/status', async (req, res) => {
     const id = req.params.id;
     const status = req.body.status;
 
-    if(status !== 'active' && status !== 'suspended'){
+    const allowedStatuses = [
+    'pending',
+    'approved',
+    'suspended',
+    'rejected'
+    ];
+
+    if(!status){
+        return res.status(400).json({error: 'Status is required'});
+    }
+
+    if(!allowedStatuses.includes(status)){
         return res.status(400).json({error: 'Invalid status value'});
     }
 
-    const { data, error } = await supabase.from('businesses').update({status}).eq('id', id).select();
+    const { data, error } = await supabaseAdmin.from('businesses').update({status}).eq('id', id).select().single();
 
     if(error){
         return res.status(500).json({error: error.message});
