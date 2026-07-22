@@ -31,16 +31,9 @@ app.use('/favorites', favoriteRouter)
 app.use('/admin', adminRouter)
 app.use('/landing', landingRouter)
 
-import { errorHandler } from './middleware/errorHandler.js';
-import { AppError } from './helpers/AppError.js';
-
-
-
 app.use((req, res, next) => {
     next(new AppError(`Route not found: ${req.originalUrl}`, 404));
 });
-
-app.use(errorHandler);
 
 app.use(errorHandler)
 
