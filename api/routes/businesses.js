@@ -2,6 +2,7 @@ import express from 'express'
 import { supabase, supabaseAdmin } from '../dbconnect.js'
 import { authMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
+import { verifyBusinessOwnership } from '../helpers/verifyBusinessOwnership.js';
 import {
     businessSlugParamSchema,
     updateBusinessSchema,
@@ -44,7 +45,6 @@ router.get('/:slug/services', validate(businessSlugParamSchema), async (req, res
 
     const {data, error} = await supabase.from('businesses').select('id').eq('slug', slug).single();
 
-
     if(error){
         return res.status(500).json({error: error.message});
     }
@@ -64,15 +64,8 @@ router.put('/:slug/services/:id', authMiddleware, validate(updateServiceSchema),
     const { slug, id } = req.validated.params;
     const { name, description, category_id } = req.validated.body;
 
-    const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id').eq('slug', slug).single();
-
-    if(businessError || !businessData){
-        return res.status(404).json({error: 'Business not found'});
-    }
-
-    if(req.user.id !== businessData.owner_user_id){
-        return res.status(403).json({message: 'Unauthorized can not update businesses services'});
-    }
+    const { handled } = await verifyBusinessOwnership(slug, req.user.id, res);
+    if (handled) return;
 
     const {data, error} = await supabase.from('services').update({name, description, category_id}).eq('id', id);
 
@@ -87,15 +80,8 @@ router.post('/:slug/services', authMiddleware, validate(createServiceSchema), as
     const { slug } = req.validated.params;
     const { name, description, category_id } = req.validated.body;
 
-    const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id, id').eq('slug', slug).single();
-
-    if(businessError || !businessData){
-        return res.status(404).json({error: 'Business not found'});
-    }
-
-    if(req.user.id !== businessData.owner_user_id){
-        return res.status(403).json({message: 'Unauthorized can not add service to business'});
-    }
+    const { businessData, handled } = await verifyBusinessOwnership(slug, req.user.id, res);
+    if (handled) return;
 
     const {data, error} = await supabase.from('services').insert({business_id: businessData.id, name, description, category_id});
 
@@ -109,15 +95,8 @@ router.post('/:slug/services', authMiddleware, validate(createServiceSchema), as
 router.delete('/:slug/services/:id', authMiddleware, validate(serviceIdParamSchema), async (req, res) => {
     const { slug, id } = req.validated.params;
 
-    const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id').eq('slug', slug).single();
-
-    if(businessError || !businessData){
-        return res.status(404).json({error: 'Business not found'});
-    }
-
-    if(req.user.id !== businessData.owner_user_id){
-        return res.status(403).json({message: 'Unauthorized can not add service to business'});
-    }
+    const { handled } = await verifyBusinessOwnership(slug, req.user.id, res);
+    if (handled) return;
 
     const {data, error} = await supabase.from('services').delete().eq('id', id);
 
@@ -132,15 +111,8 @@ router.put('/:slug', authMiddleware, validate(updateBusinessSchema), async (req,
     const { slug } = req.validated.params;
     const { name, description, address, city, state, zip, phone, email } = req.validated.body;
 
-    const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id').eq('slug', slug).single();
-
-    if(businessError || !businessData){
-        return res.status(404).json({error: 'Business not found'});
-    }
-
-    if(req.user.id !== businessData.owner_user_id){
-        return res.status(403).json({error: 'Unauthorized, can not access this business'});
-    }
+    const { businessData, handled } = await verifyBusinessOwnership(slug, req.user.id, res);
+    if (handled) return;
 
     const {data, error} = await supabase.from('businesses').update({name, description, address, city, state, zip, phone, email}).eq('slug', slug);
 
@@ -154,15 +126,8 @@ router.put('/:slug', authMiddleware, validate(updateBusinessSchema), async (req,
 router.delete('/:slug', authMiddleware, validate(businessSlugParamSchema), async (req, res) => {
     const { slug } = req.validated.params;
 
-    const {data: businessData, error: businessError} = await supabase.from('businesses').select('owner_user_id, id').eq('slug', slug).single();
-
-    if(businessError || !businessData){
-        return res.status(404).json({error: 'Could not find business'});
-    }
-
-    if(businessData.owner_user_id !== req.user.id){
-        return res.status(403).json({error: 'Not authorized to delete this business'});
-    }
+    const { businessData, handled } = await verifyBusinessOwnership(slug, req.user.id, res);
+    if (handled) return;
 
     const {error: servicesError} = await supabase.from('services').delete().eq('business_id', businessData.id);
     if(servicesError) return res.status(500).json({error: servicesError.message});
