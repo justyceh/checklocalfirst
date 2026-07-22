@@ -9,4 +9,15 @@ dotenv.config()
 export const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 export const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-console.log('Admin key prefix:', process.env.SUPABASE_SERVICE_KEY?.slice(0, 12));
+
+// TEMPORARY — remove after debugging
+try {
+    if (!process.env.SUPABASE_SERVICE_KEY) {
+        console.log('SUPABASE_SERVICE_KEY is NOT SET at all');
+    } else {
+        const payload = JSON.parse(Buffer.from(process.env.SUPABASE_SERVICE_KEY.split('.')[1], 'base64').toString());
+        console.log('SUPABASE_SERVICE_KEY role:', payload.role);
+    }
+} catch (e) {
+    console.log('SUPABASE_SERVICE_KEY is malformed:', e.message);
+}
