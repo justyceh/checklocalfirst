@@ -1,5 +1,7 @@
 import express from 'express';
 import { supabase } from '../dbconnect.js';
+import { catchAsync } from '../helpers/catchAsync.js';
+import { AppError } from '../helpers/AppError.js';
 
 const router = express.Router();
 
@@ -31,140 +33,130 @@ function groupServicesByBusiness(services = []) {
     return Array.from(groupedBusinesses.values());
 }
 
-router.get('/', async (req, res) => {
-    try {
-        console.log('Got searching route');
+router.get('/', catchAsync(async (req, res) => {
+    console.log('Got searching route');
 
-        const searchQuery =
-            typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const searchQuery =
+        typeof req.query.q === 'string' ? req.query.q.trim() : '';
 
-        const category =
-            typeof req.query.category === 'string'
-                ? req.query.category.trim()
-                : '';
+    const category =
+        typeof req.query.category === 'string'
+            ? req.query.category.trim()
+            : '';
 
-        const hasQuery = searchQuery.length > 0;
+    const hasQuery = searchQuery.length > 0;
 
-        if (!hasQuery && !category) {
-            return res.json([]);
+    if (!hasQuery && !category) {
+        return res.json({ success: true, data: [] });
+    }
+
+    let categoryId = null;
+
+    if (category) {
+        const { data, error } = await supabase
+            .from('categories')
+            .select('id')
+            .eq('slug', category)
+            .single();
+
+        if (error) {
+            throw new AppError(error.message, 500);
         }
 
-        let categoryId = null;
+        categoryId = data.id;
+    }
 
-        if (category) {
-            const { data, error } = await supabase
-                .from('categories')
-                .select('id')
-                .eq('slug', category)
-                .single();
-
-            if (error) {
-                return res.status(500).json({ error: error.message });
-            }
-
-            categoryId = data.id;
-        }
-
-        // Category-only browse
-        if (!hasQuery) {
-            const { data, error } = await supabase
-                .from('services')
-                .select('*, businesses!inner(*)')
-                .eq('category_id', categoryId)
-                .eq('businesses.status', 'approved');
-
-            if (error) {
-                return res.status(500).json({ error: error.message });
-            }
-
-            return res.json(groupServicesByBusiness(data));
-        }
-
-        const formattedQuery = searchQuery
-            .replace(/[^a-zA-Z0-9\s]/g, '')
-            .split(/\s+/)
-            .filter(Boolean)
-            .join(' & ');
-
-        let query = supabase
+    // Category-only browse
+    if (!hasQuery) {
+        const { data, error } = await supabase
             .from('services')
             .select('*, businesses!inner(*)')
-            .textSearch('search_vector', formattedQuery)
+            .eq('category_id', categoryId)
+            .eq('businesses.status', 'approved');
+
+        if (error) {
+            throw new AppError(error.message, 500);
+        }
+
+        return res.json({ success: true, data: groupServicesByBusiness(data) });
+    }
+
+    const formattedQuery = searchQuery
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .join(' & ');
+
+    let query = supabase
+        .from('services')
+        .select('*, businesses!inner(*)')
+        .textSearch('search_vector', formattedQuery)
+        .eq('businesses.status', 'approved');
+
+    if (categoryId) {
+        query = query.eq('category_id', categoryId);
+    }
+
+    let { data, error } = await query;
+
+    if (error) {
+        throw new AppError(error.message, 500);
+    }
+
+    // Exact/partial-name fallback
+    if (data.length === 0) {
+        let fallbackQuery = supabase
+            .from('services')
+            .select('*, businesses!inner(*)')
+            .ilike('name', `%${searchQuery}%`)
             .eq('businesses.status', 'approved');
 
         if (categoryId) {
-            query = query.eq('category_id', categoryId);
+            fallbackQuery = fallbackQuery.eq(
+                'category_id',
+                categoryId
+            );
         }
 
-        let { data, error } = await query;
-
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-
-        // Exact/partial-name fallback
-        if (data.length === 0) {
-            let fallbackQuery = supabase
-                .from('services')
-                .select('*, businesses!inner(*)')
-                .ilike('name', `%${searchQuery}%`)
-                .eq('businesses.status', 'approved');
-
-            if (categoryId) {
-                fallbackQuery = fallbackQuery.eq(
-                    'category_id',
-                    categoryId
-                );
-            }
-
-            ({ data, error } = await fallbackQuery);
-        }
-
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-
-        // Fuzzy fallback
-        if (data.length === 0) {
-            const {
-                data: fuzzyIds,
-                error: fuzzyError
-            } = await supabase.rpc('search_services_fuzzy', {
-                search_term: searchQuery,
-                filter_category_id: categoryId
-            });
-
-            if (fuzzyError) {
-                return res.status(500).json({
-                    error: fuzzyError.message
-                });
-            }
-
-            const ids = fuzzyIds.map((result) => result.id);
-
-            if (ids.length === 0) {
-                return res.json([]);
-            }
-
-            ({ data, error } = await supabase
-                .from('services')
-                .select('*, businesses!inner(*)')
-                .in('id', ids)
-                .eq('businesses.status', 'approved'));
-        }
-
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-
-        return res.json(groupServicesByBusiness(data));
-    } catch (error) {
-        console.error('Search route error:', error);
-
-        return res.status(500).json({
-            error: 'An unexpected error occurred while searching.'
-        });
+        ({ data, error } = await fallbackQuery);
     }
-});
+
+    if (error) {
+        throw new AppError(error.message, 500);
+    }
+
+    // Fuzzy fallback
+    if (data.length === 0) {
+        const {
+            data: fuzzyIds,
+            error: fuzzyError
+        } = await supabase.rpc('search_services_fuzzy', {
+            search_term: searchQuery,
+            filter_category_id: categoryId
+        });
+
+        if (fuzzyError) {
+            throw new AppError(fuzzyError.message, 500);
+        }
+
+        const ids = fuzzyIds.map((result) => result.id);
+
+        if (ids.length === 0) {
+            return res.json({ success: true, data: [] });
+        }
+
+        ({ data, error } = await supabase
+            .from('services')
+            .select('*, businesses!inner(*)')
+            .in('id', ids)
+            .eq('businesses.status', 'approved'));
+    }
+
+    if (error) {
+        throw new AppError(error.message, 500);
+    }
+
+    return res.json({ success: true, data: groupServicesByBusiness(data) });
+}));
 
 export default router;

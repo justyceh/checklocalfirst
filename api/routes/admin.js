@@ -3,111 +3,111 @@ import { supabaseAdmin, supabase } from '../dbconnect.js'
 import { authMiddleware, authAdminMiddleware } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import { businessIdParamSchema, userIdParamSchema, updateBusinessStatusSchema } from '../schemas/adminSchemas.js'
+import { catchAsync } from '../helpers/catchAsync.js';
+import { AppError } from '../helpers/AppError.js';
 
 const router = express.Router()
 
 router.use(authMiddleware, authAdminMiddleware);
 
 
-router.get('/businesses', async (req, res) => {
+router.get('/businesses', catchAsync(async (req, res) => {
     const { data, error } = await supabase.from('businesses').select('*').order('created_at', { ascending: false });
 
     if(error){
-        return res.status(500).json({error: error.message});
+        throw new AppError(error.message, 500);
     }
 
-    res.status(200).json(data);
-})
+    res.status(200).json({ success: true, data });
+}))
 
-router.get('/businesses/:id', validate(businessIdParamSchema), async (req, res) => {
+router.get('/businesses/:id', validate(businessIdParamSchema), catchAsync(async (req, res) => {
     const { id } = req.validated.params;
 
     const { data, error } = await supabase.from('businesses').select('*').eq('id', id).single();
 
     if(error){
-        return res.status(500).json({error: error.message});
+        throw new AppError(error.message, 500);
     }
 
-    res.status(200).json(data);
-})
+    res.status(200).json({ success: true, data });
+}))
 
-router.patch('/businesses/:id/status', validate(updateBusinessStatusSchema), async (req, res) => {
+router.patch('/businesses/:id/status', validate(updateBusinessStatusSchema), catchAsync(async (req, res) => {
     const { id } = req.validated.params;
     const { status } = req.validated.body;
 
     const { data, error } = await supabaseAdmin.from('businesses').update({status}).eq('id', id).select().single();
 
     if(error){
-        return res.status(500).json({error: error.message});
+        throw new AppError(error.message, 500);
     }
 
-    if(!data || data.length === 0){
-        return res.status(404).json({error: 'Business not found'});
+    if(!data){
+        throw new AppError('Business not found', 404);
     }
 
-    return res.status(200).json({message: 'Business status updated'});
-})
+    return res.status(200).json({ success: true, message: 'Business status updated' });
+}))
 
-router.delete('/businesses/:id', validate(businessIdParamSchema), async (req, res) => {
+router.delete('/businesses/:id', validate(businessIdParamSchema), catchAsync(async (req, res) => {
     const { id } = req.validated.params;
 
     const { data: businessData, error: businessError } = await supabase.from('businesses').select('owner_user_id').eq('id', id).single();
 
     if(businessError || !businessData){
-        return res.status(404).json({error: 'Business not found'});
+        throw new AppError('Business not found', 404);
     }
 
     const { error: bizError } = await supabase.from('businesses').delete().eq('id', id);
     if(bizError){
-        return res.status(500).json({error: bizError.message});
+        throw new AppError(bizError.message, 500);
     }
 
     if(businessData.owner_user_id){
         const { error: userError } = await supabase.from('users').delete().eq('user_id', businessData.owner_user_id);
         if(userError){
-            return res.status(500).json({error: userError.message});
+            throw new AppError(userError.message, 500);
         }
 
         const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(businessData.owner_user_id);
         if(authError){
-            return res.status(500).json({error: authError.message});
+            throw new AppError(authError.message, 500);
         }
     }
 
-    return res.status(200).json({message: 'Business successfully deleted'});
-})
+    return res.status(200).json({ success: true, message: 'Business successfully deleted' });
+}))
 
-router.get('/users', async (req, res) => {
+router.get('/users', catchAsync(async (req, res) => {
     const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
 
     if(error){
-        return res.status(500).json({error: error.message});
+        throw new AppError(error.message, 500);
     }
 
-    res.status(200).json(data);
-})
+    res.status(200).json({ success: true, data });
+}))
 
-router.get('/users/:id', validate(userIdParamSchema), async (req, res) => {
+router.get('/users/:id', validate(userIdParamSchema), catchAsync(async (req, res) => {
     const { id } = req.validated.params;
 
     const { data, error } = await supabase.from('users').select('*').eq('user_id', id).single();
 
     if(error){
-        return res.status(500).json({error: error.message});
+        throw new AppError(error.message, 500);
     }
 
-    res.status(200).json(data);
-})
+    res.status(200).json({ success: true, data });
+}))
 
-router.delete('/users/:id', validate(userIdParamSchema), async (req, res) => {
+router.delete('/users/:id', validate(userIdParamSchema), catchAsync(async (req, res) => {
     const { id } = req.validated.params;
 
-    // 1. Self-lockout: can't delete your own admin account
     if (id === req.user.id) {
-        return res.status(400).json({ error: 'You cannot delete your own admin account' });
+        throw new AppError('You cannot delete your own admin account', 400);
     }
 
-    // 2. Find the target user, and what type of account they are
     const { data: targetUser, error: targetError } = await supabase
         .from('users')
         .select('account_type')
@@ -115,10 +115,9 @@ router.delete('/users/:id', validate(userIdParamSchema), async (req, res) => {
         .single();
 
     if (targetError || !targetUser) {
-        return res.status(404).json({ error: 'User not found' });
+        throw new AppError('User not found', 404);
     }
 
-    // 3. If deleting an admin, make sure they aren't the last one
     if (targetUser.account_type === 'admin') {
         const { count, error: countError } = await supabase
             .from('users')
@@ -126,41 +125,39 @@ router.delete('/users/:id', validate(userIdParamSchema), async (req, res) => {
             .eq('account_type', 'admin');
 
         if (countError) {
-            return res.status(500).json({ error: countError.message });
+            throw new AppError(countError.message, 500);
         }
 
         if (count <= 1) {
-            return res.status(400).json({ error: 'Cannot delete the last remaining admin account' });
+            throw new AppError('Cannot delete the last remaining admin account', 400);
         }
     }
 
-    // 4. Delete from public.users (any owned business will auto SET NULL via migration 002)
     const { error: userError } = await supabase.from('users').delete().eq('user_id', id);
     if (userError) {
-        return res.status(500).json({ error: userError.message });
+        throw new AppError(userError.message, 500);
     }
 
-    // 5. Delete from Supabase Auth
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
     if (authError) {
-        return res.status(500).json({ error: authError.message });
+        throw new AppError(authError.message, 500);
     }
 
-    return res.status(200).json({ message: 'User successfully deleted' });
-})
+    return res.status(200).json({ success: true, message: 'User successfully deleted' });
+}))
 
 
-router.get('/stats', async (req, res) => {
+router.get('/stats', catchAsync(async (req, res) => {
     const { count: totalBusinesses, error: businessError } = await supabase.from('businesses').select('*', { count: 'exact', head: true });
 
     if(businessError){
-        return res.status(500).json({error: businessError.message});
+        throw new AppError(businessError.message, 500);
     }
 
     const { count: totalUsers, error: userError } = await supabase.from('users').select('*', { count: 'exact', head: true });
 
     if(userError){
-        return res.status(500).json({error: userError.message});
+        throw new AppError(userError.message, 500);
     }
 
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -168,15 +165,18 @@ router.get('/stats', async (req, res) => {
     const { count: newSignups, error: signupError } = await supabase.from('users').select('*', { count: 'exact', head: true }).gte('created_at', twentyFourHoursAgo);
 
     if(signupError){
-        return res.status(500).json({error: signupError.message});
+        throw new AppError(signupError.message, 500);
     }
 
     return res.status(200).json({
-        totalBusinesses,
-        totalUsers,
-        newSignupsLast24Hours: newSignups
+        success: true,
+        data: {
+            totalBusinesses,
+            totalUsers,
+            newSignupsLast24Hours: newSignups
+        }
     });
-})
+}))
 
 
 

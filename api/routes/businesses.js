@@ -3,6 +3,8 @@ import { supabase, supabaseAdmin } from '../dbconnect.js'
 import { authMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { verifyBusinessOwnership } from '../helpers/verifyBusinessOwnership.js';
+import { catchAsync } from '../helpers/catchAsync.js';
+import { AppError } from '../helpers/AppError.js';
 import {
     businessSlugParamSchema,
     updateBusinessSchema,
@@ -13,40 +15,44 @@ import {
 
 const router = express.Router()
 
-router.get('/', async (req, res) => {
+router.get('/', catchAsync(async (req, res) => {
     const { data, error} = await supabase.from('businesses').select('*').eq('status', 'approved');
 
-    if(error){return res.status(500).json({error: error.message})}
+    if(error){
+        throw new AppError(error.message, 500);
+    }
 
-    res.json(data);
-})
+    res.json({ success: true, data });
+}))
 
-router.get('/me', authMiddleware, async (req, res) => {
+router.get('/me', authMiddleware, catchAsync(async (req, res) => {
     const { data, error } = await supabase.from('businesses').select('*').eq('owner_user_id', req.user.id).single();
 
     if(error){
-        return res.status(404).json({error: 'Business not found'});
+        throw new AppError('Business not found', 404);
     }
 
-    res.json(data);
-})
+    res.json({ success: true, data });
+}))
 
-router.get('/:slug', validate(businessSlugParamSchema), async (req, res) => {
+router.get('/:slug', validate(businessSlugParamSchema), catchAsync(async (req, res) => {
     const { slug } = req.validated.params;
     const { data, error } = await supabase.from('businesses').select('*').eq('slug', slug).eq('status', 'approved').single();
 
-    if(error){return res.status(500).json({ error: error.message })}
+    if(error){
+        throw new AppError(error.message, 500);
+    }
 
-    res.json(data);
-})
+    res.json({ success: true, data });
+}))
 
-router.get('/:slug/services', validate(businessSlugParamSchema), async (req, res) => {
+router.get('/:slug/services', validate(businessSlugParamSchema), catchAsync(async (req, res) => {
     const { slug } = req.validated.params;
 
     const {data, error} = await supabase.from('businesses').select('id').eq('slug', slug).single();
 
     if(error){
-        return res.status(500).json({error: error.message});
+        throw new AppError(error.message, 500);
     }
 
     const businessId = data.id;
@@ -54,13 +60,13 @@ router.get('/:slug/services', validate(businessSlugParamSchema), async (req, res
     const {data: businessData, error: businessError} = await supabase.from('services').select('*').eq('business_id', businessId);
 
     if(businessError){
-        return res.status(500).json({error: businessError.message});
+        throw new AppError(businessError.message, 500);
     }
 
-    return res.status(200).json({data: businessData});
-})
+    return res.status(200).json({ success: true, data: businessData });
+}))
 
-router.put('/:slug/services/:id', authMiddleware, validate(updateServiceSchema), async (req, res) => {
+router.put('/:slug/services/:id', authMiddleware, validate(updateServiceSchema), catchAsync(async (req, res) => {
     const { slug, id } = req.validated.params;
     const { name, description, category_id } = req.validated.body;
 
@@ -70,13 +76,13 @@ router.put('/:slug/services/:id', authMiddleware, validate(updateServiceSchema),
     const {data, error} = await supabase.from('services').update({name, description, category_id}).eq('id', id);
 
     if(error){
-        return res.status(500).json({error: error.message});
+        throw new AppError(error.message, 500);
     }
 
-    return res.status(200).json({message: 'Service for business updated'});
-})
+    return res.status(200).json({ success: true, message: 'Service for business updated' });
+}))
 
-router.post('/:slug/services', authMiddleware, validate(createServiceSchema), async (req, res) => {
+router.post('/:slug/services', authMiddleware, validate(createServiceSchema), catchAsync(async (req, res) => {
     const { slug } = req.validated.params;
     const { name, description, category_id } = req.validated.body;
 
@@ -86,13 +92,13 @@ router.post('/:slug/services', authMiddleware, validate(createServiceSchema), as
     const {data, error} = await supabase.from('services').insert({business_id: businessData.id, name, description, category_id});
 
     if(error){
-        return res.status(500).json({error: error.message});
+        throw new AppError(error.message, 500);
     }
 
-    return res.status(201).json({message: 'Service for business added'});
-})
+    return res.status(201).json({ success: true, message: 'Service for business added' });
+}))
 
-router.delete('/:slug/services/:id', authMiddleware, validate(serviceIdParamSchema), async (req, res) => {
+router.delete('/:slug/services/:id', authMiddleware, validate(serviceIdParamSchema), catchAsync(async (req, res) => {
     const { slug, id } = req.validated.params;
 
     const { handled } = await verifyBusinessOwnership(slug, req.user.id, res);
@@ -101,13 +107,13 @@ router.delete('/:slug/services/:id', authMiddleware, validate(serviceIdParamSche
     const {data, error} = await supabase.from('services').delete().eq('id', id);
 
     if(error){
-        return res.status(500).json({error: error.message});
+        throw new AppError(error.message, 500);
     }
 
-    return res.status(200).json({message: 'Service for business deleted'});
-})
+    return res.status(200).json({ success: true, message: 'Service for business deleted' });
+}))
 
-router.put('/:slug', authMiddleware, validate(updateBusinessSchema), async (req, res) => {
+router.put('/:slug', authMiddleware, validate(updateBusinessSchema), catchAsync(async (req, res) => {
     const { slug } = req.validated.params;
     const { name, description, address, city, state, zip, phone, email } = req.validated.body;
 
@@ -117,31 +123,31 @@ router.put('/:slug', authMiddleware, validate(updateBusinessSchema), async (req,
     const {data, error} = await supabase.from('businesses').update({name, description, address, city, state, zip, phone, email}).eq('slug', slug);
 
     if(error){
-        return res.status(500).json({error: error.message});
+        throw new AppError(error.message, 500);
     }
 
-    return res.status(200).json({message: `${name ?? businessData.name} successfully updated`});
-})
+    return res.status(200).json({ success: true, message: `${name ?? businessData.name} successfully updated` });
+}))
 
-router.delete('/:slug', authMiddleware, validate(businessSlugParamSchema), async (req, res) => {
+router.delete('/:slug', authMiddleware, validate(businessSlugParamSchema), catchAsync(async (req, res) => {
     const { slug } = req.validated.params;
 
     const { businessData, handled } = await verifyBusinessOwnership(slug, req.user.id, res);
     if (handled) return;
 
     const {error: servicesError} = await supabase.from('services').delete().eq('business_id', businessData.id);
-    if(servicesError) return res.status(500).json({error: servicesError.message});
+    if(servicesError) throw new AppError(servicesError.message, 500);
 
     const {error: bizError} = await supabase.from('businesses').delete().eq('slug', slug);
-    if(bizError) return res.status(500).json({error: bizError.message});
+    if(bizError) throw new AppError(bizError.message, 500);
 
     const {error: userError} = await supabase.from('users').delete().eq('user_id', businessData.owner_user_id);
-    if(userError) return res.status(500).json({error: userError.message});
+    if(userError) throw new AppError(userError.message, 500);
 
     const {error: authError} = await supabaseAdmin.auth.admin.deleteUser(businessData.owner_user_id);
-    if(authError) return res.status(500).json({error: authError.message});
+    if(authError) throw new AppError(authError.message, 500);
 
-    return res.status(200).json({message: 'Business successfully deleted'});
-})
+    return res.status(200).json({ success: true, message: 'Business successfully deleted' });
+}))
 
 export default router

@@ -3,10 +3,12 @@ import { supabase } from '../dbconnect.js'
 import { authMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { landingSignupSchema } from '../schemas/signupSchemas.js';
+import { catchAsync } from '../helpers/catchAsync.js';
+import { AppError } from '../helpers/AppError.js';
 
 const router = express.Router()
 
-router.post('/', validate(landingSignupSchema), async (req, res) => {
+router.post('/', validate(landingSignupSchema), catchAsync(async (req, res) => {
     const { name, email, source } = req.validated.body;
 
     const { data, error } = await supabase
@@ -16,13 +18,13 @@ router.post('/', validate(landingSignupSchema), async (req, res) => {
         .single();
 
     if (error) {
-        if (error.code === '23505') { // unique_violation on email
-            return res.status(409).json({ message: "This email has already signed up" });
+        if (error.code === '23505') {
+            throw new AppError('This email has already signed up', 409);
         }
-        return res.status(500).json({ error: error.message });
+        throw new AppError(error.message, 500);
     }
 
-    res.status(201).json(data);
-});
+    res.status(201).json({ success: true, data });
+}))
 
 export default router
