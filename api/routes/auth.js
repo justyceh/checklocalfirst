@@ -17,7 +17,7 @@ router.post('/signup/user', validate(signupUserSchema), catchAsync(async (req, r
     const { firstname, lastname, email, password, phone } = req.validated.body;
     const accountType = 'user';
 
-    const {data, error} = await supabaseAdmin.auth.signUp({
+    const {data, error} = await supabase.auth.signUp({
         email: email,
         password: password,
         options: {
@@ -72,7 +72,7 @@ router.post('/signup/business', validate(signupBusinessSchema), catchAsync(async
 
     const slug = businessname.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-    const {data, error} = await supabaseAdmin.auth.signUp({
+    const {data, error} = await supabase.auth.signUp({
         email: businessemail,
         password: password,
         options: {
