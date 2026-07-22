@@ -16,3 +16,13 @@ export const categoryIdParamSchema = z.object({
     id: z.coerce.number().int().positive('Invalid category id'),
   }),
 });
+export const updateCategorySchema = z.object({
+  query: z.object({}).optional(),
+  params: z.object({
+    id: z.coerce.number().int().positive('Invalid category id'),
+  }),
+  body: z.object({
+    name: z.string().min(1).max(100).optional(),
+    slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Slug must be lowercase with words separated by hyphens').optional(),
+  }),
+});

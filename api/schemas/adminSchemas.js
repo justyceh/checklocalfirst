@@ -30,3 +30,22 @@ export const updateBusinessStatusSchema = z.object({
     }),
   }),
 });
+export const adminServiceIdParamSchema = z.object({
+  body: z.object({}).optional(),
+  query: z.object({}).optional(),
+  params: z.object({
+    id: z.coerce.number().int().positive('Invalid service id'),
+  }),
+});
+
+export const adminUpdateServiceSchema = z.object({
+  query: z.object({}).optional(),
+  params: z.object({
+    id: z.coerce.number().int().positive('Invalid service id'),
+  }),
+  body: z.object({
+    name: z.string().min(1).max(100).optional(),
+    description: z.string().optional(),
+    category_id: z.coerce.number().int().positive().optional(),
+  }),
+});

@@ -2,7 +2,14 @@ import express from 'express'
 import { supabaseAdmin, supabase } from '../dbconnect.js'
 import { authMiddleware, authAdminMiddleware } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
-import { businessIdParamSchema, userIdParamSchema, updateBusinessStatusSchema } from '../schemas/adminSchemas.js'
+import {
+    businessIdParamSchema,
+    userIdParamSchema,
+    updateBusinessStatusSchema,
+    adminServiceIdParamSchema,
+    adminUpdateServiceSchema
+} from '../schemas/adminSchemas.js'
+import { categoryIdParamSchema, updateCategorySchema } from '../schemas/categorySchemas.js'
 import { catchAsync } from '../helpers/catchAsync.js';
 import { AppError } from '../helpers/AppError.js';
 
@@ -144,6 +151,106 @@ router.delete('/users/:id', validate(userIdParamSchema), catchAsync(async (req, 
     }
 
     return res.status(200).json({ success: true, message: 'User successfully deleted' });
+}))
+
+
+// SERVICES
+
+router.get('/services', catchAsync(async (req, res) => {
+    const { data, error } = await supabaseAdmin
+        .from('services')
+        .select('*, businesses(name, slug)')
+        .order('created_at', { ascending: false });
+
+    if(error){
+        throw new AppError(error.message, 500);
+    }
+
+    res.status(200).json({ success: true, data });
+}))
+
+router.get('/services/:id', validate(adminServiceIdParamSchema), catchAsync(async (req, res) => {
+    const { id } = req.validated.params;
+
+    const { data, error } = await supabaseAdmin
+        .from('services')
+        .select('*, businesses(name, slug)')
+        .eq('id', id)
+        .single();
+
+    if(error){
+        throw new AppError('Service not found', 404);
+    }
+
+    res.status(200).json({ success: true, data });
+}))
+
+router.put('/services/:id', validate(adminUpdateServiceSchema), catchAsync(async (req, res) => {
+    const { id } = req.validated.params;
+    const { name, description, category_id } = req.validated.body;
+
+    const { data, error } = await supabaseAdmin
+        .from('services')
+        .update({ name, description, category_id })
+        .eq('id', id)
+        .select()
+        .single();
+
+    if(error){
+        throw new AppError(error.message, 500);
+    }
+
+    if(!data){
+        throw new AppError('Service not found', 404);
+    }
+
+    return res.status(200).json({ success: true, message: 'Service updated successfully' });
+}))
+
+router.delete('/services/:id', validate(adminServiceIdParamSchema), catchAsync(async (req, res) => {
+    const { id } = req.validated.params;
+
+    const { data, error } = await supabaseAdmin
+        .from('services')
+        .delete()
+        .eq('id', id)
+        .select()
+        .single();
+
+    if(error){
+        throw new AppError(error.message, 500);
+    }
+
+    if(!data){
+        throw new AppError('Service not found', 404);
+    }
+
+    return res.status(200).json({ success: true, message: 'Service deleted successfully' });
+}))
+
+
+// CATEGORIES
+
+router.put('/categories/:id', validate(updateCategorySchema), catchAsync(async (req, res) => {
+    const { id } = req.validated.params;
+    const { name, slug } = req.validated.body;
+
+    const { data, error } = await supabaseAdmin
+        .from('categories')
+        .update({ name, slug })
+        .eq('id', id)
+        .select()
+        .single();
+
+    if(error){
+        throw new AppError(error.message, 500);
+    }
+
+    if(!data){
+        throw new AppError('Category not found', 404);
+    }
+
+    return res.status(200).json({ success: true, message: 'Category updated successfully' });
 }))
 
 
