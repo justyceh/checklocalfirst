@@ -1,4 +1,4 @@
-import { supabase } from "../dbconnect.js";
+import { supabase, supabaseAdmin } from "../dbconnect.js";
 
 export const authMiddleware = async (req, res, next) => {
     try{
@@ -30,7 +30,7 @@ export const authAdminMiddleware = async (req, res, next) => {
 
     
     
-    const {data, error} = await supabase.from('users').select('account_type').eq('user_id', req.user.id).single();
+    const {data, error} = await supabaseAdmin.from('users').select('account_type').eq('user_id', req.user.id).single();
 
     if(error){
         return res.status(500).json({error: 'Admin auth failed'});
