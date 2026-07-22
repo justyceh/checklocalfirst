@@ -1,7 +1,8 @@
 // helpers/verifyBusinessOwnership.js
 import { supabase } from '../dbconnect.js';
+import { AppError } from './AppError.js';
 
-export async function verifyBusinessOwnership(slug, userId, res) {
+export async function verifyBusinessOwnership(slug, userId) {
     const { data: businessData, error: businessError } = await supabase
         .from('businesses')
         .select('owner_user_id, id')
@@ -9,14 +10,12 @@ export async function verifyBusinessOwnership(slug, userId, res) {
         .single();
 
     if (businessError || !businessData) {
-        res.status(404).json({ error: 'Business not found' });
-        return { handled: true };
+        throw new AppError('Business not found', 404);
     }
 
     if (userId !== businessData.owner_user_id) {
-        res.status(403).json({ error: 'Unauthorized: you do not own this business' });
-        return { handled: true };
+        throw new AppError('Unauthorized: you do not own this business', 403);
     }
 
-    return { businessData };
+    return businessData;
 }

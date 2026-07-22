@@ -70,8 +70,7 @@ router.put('/:slug/services/:id', authMiddleware, validate(updateServiceSchema),
     const { slug, id } = req.validated.params;
     const { name, description, category_id } = req.validated.body;
 
-    const { handled } = await verifyBusinessOwnership(slug, req.user.id, res);
-    if (handled) return;
+    await verifyBusinessOwnership(slug, req.user.id);
 
     const {data, error} = await supabase.from('services').update({name, description, category_id}).eq('id', id);
 
@@ -86,8 +85,7 @@ router.post('/:slug/services', authMiddleware, validate(createServiceSchema), ca
     const { slug } = req.validated.params;
     const { name, description, category_id } = req.validated.body;
 
-    const { businessData, handled } = await verifyBusinessOwnership(slug, req.user.id, res);
-    if (handled) return;
+    const businessData = await verifyBusinessOwnership(slug, req.user.id);
 
     const {data, error} = await supabase.from('services').insert({business_id: businessData.id, name, description, category_id});
 
@@ -101,8 +99,7 @@ router.post('/:slug/services', authMiddleware, validate(createServiceSchema), ca
 router.delete('/:slug/services/:id', authMiddleware, validate(serviceIdParamSchema), catchAsync(async (req, res) => {
     const { slug, id } = req.validated.params;
 
-    const { handled } = await verifyBusinessOwnership(slug, req.user.id, res);
-    if (handled) return;
+    await verifyBusinessOwnership(slug, req.user.id);
 
     const {data, error} = await supabase.from('services').delete().eq('id', id);
 
@@ -117,8 +114,7 @@ router.put('/:slug', authMiddleware, validate(updateBusinessSchema), catchAsync(
     const { slug } = req.validated.params;
     const { name, description, address, city, state, zip, phone, email } = req.validated.body;
 
-    const { businessData, handled } = await verifyBusinessOwnership(slug, req.user.id, res);
-    if (handled) return;
+    const businessData = await verifyBusinessOwnership(slug, req.user.id);
 
     const {data, error} = await supabase.from('businesses').update({name, description, address, city, state, zip, phone, email}).eq('slug', slug);
 
@@ -132,8 +128,7 @@ router.put('/:slug', authMiddleware, validate(updateBusinessSchema), catchAsync(
 router.delete('/:slug', authMiddleware, validate(businessSlugParamSchema), catchAsync(async (req, res) => {
     const { slug } = req.validated.params;
 
-    const { businessData, handled } = await verifyBusinessOwnership(slug, req.user.id, res);
-    if (handled) return;
+    const businessData = await verifyBusinessOwnership(slug, req.user.id);
 
     const {error: servicesError} = await supabase.from('services').delete().eq('business_id', businessData.id);
     if(servicesError) throw new AppError(servicesError.message, 500);
