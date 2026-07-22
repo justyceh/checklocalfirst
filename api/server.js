@@ -9,6 +9,7 @@ import favoriteRouter from './routes/favorites.js'
 import adminRouter from './routes/admin.js'
 import landingRouter from './routes/signups.js'
 import cors from 'cors'
+import { errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
 
@@ -29,6 +30,7 @@ app.use('/auth', authRouter)
 app.use('/favorites', favoriteRouter)
 app.use('/admin', adminRouter)
 app.use('/landing', landingRouter)
+app.use(errorHandler)
 
 
 app.listen(3000, () => {

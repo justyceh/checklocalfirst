@@ -3,49 +3,50 @@ import { supabase } from '../dbconnect.js'
 import { authAdminMiddleware, authMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { createCategorySchema, categoryIdParamSchema } from '../schemas/categorySchemas.js';
+import { catchAsync } from '../helpers/catchAsync.js';
+import { AppError } from '../helpers/AppError.js';
 
 const router = express.Router()
 
-router.get('/', async (req, res) => {
+router.get('/', catchAsync(async (req, res) => {
     const {data, error} = await supabase.from('categories').select('*');
 
     if(error){
-        return res.status(500).json({error: error.message});
+        throw new AppError(error.message, 500);
     }
 
-    return res.status(200).json({message: "Got categories successfully", data: data});
-})
+    return res.status(200).json({ success: true, data });
+}))
 
-router.post('/', authMiddleware, authAdminMiddleware, validate(createCategorySchema), async (req, res) => {
+router.post('/', authMiddleware, authAdminMiddleware, validate(createCategorySchema), catchAsync(async (req, res) => {
     const { name, slug } = req.validated.body;
 
     const { data, error } = await supabase.from('categories').insert({ name, slug }).select().single();
 
     if (error) {
-        return res.status(500).json({ error: error.message });
+        throw new AppError(error.message, 500);
     }
 
-    return res.status(201).json({ message: "Category created successfully", data: data });
-})
+    return res.status(201).json({ success: true, data });
+}))
 
-router.delete('/:id', authMiddleware, authAdminMiddleware, validate(categoryIdParamSchema), async (req, res) => {
+router.delete('/:id', authMiddleware, authAdminMiddleware, validate(categoryIdParamSchema), catchAsync(async (req, res) => {
     const { id } = req.validated.params;
 
     const { data, error } = await supabase.from('categories').delete().eq('id', id).select().single();
 
     if (error) {
-        // FK violation — category still has services attached
         if (error.code === '23503') {
-            return res.status(409).json({ error: 'Cannot delete category: services are still assigned to it' });
+            throw new AppError('Cannot delete category: services are still assigned to it', 409);
         }
-        return res.status(500).json({ error: error.message });
+        throw new AppError(error.message, 500);
     }
 
     if (!data) {
-        return res.status(404).json({ error: 'Category not found' });
+        throw new AppError('Category not found', 404);
     }
 
-    return res.status(200).json({ message: 'Category deleted successfully' });
-})
+    return res.status(200).json({ success: true, message: 'Category deleted successfully' });
+}))
 
 export default router
