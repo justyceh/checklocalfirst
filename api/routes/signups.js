@@ -1,5 +1,5 @@
 import express from 'express'
-import { supabase } from '../dbconnect.js'
+import { supabase, supabaseAdmin } from '../dbconnect.js'
 import { authMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { landingSignupSchema } from '../schemas/signupSchemas.js';
@@ -11,7 +11,7 @@ const router = express.Router()
 router.post('/', validate(landingSignupSchema), catchAsync(async (req, res) => {
     const { name, email, source } = req.validated.body;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .from('landing_signups')
         .insert({ name, email, source })
         .select()

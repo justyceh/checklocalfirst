@@ -12,7 +12,7 @@ router.use(authMiddleware, authAdminMiddleware);
 
 
 router.get('/businesses', catchAsync(async (req, res) => {
-    const { data, error } = await supabase.from('businesses').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabaseAdmin.from('businesses').select('*').order('created_at', { ascending: false });
 
     if(error){
         throw new AppError(error.message, 500);
@@ -24,7 +24,7 @@ router.get('/businesses', catchAsync(async (req, res) => {
 router.get('/businesses/:id', validate(businessIdParamSchema), catchAsync(async (req, res) => {
     const { id } = req.validated.params;
 
-    const { data, error } = await supabase.from('businesses').select('*').eq('id', id).single();
+    const { data, error } = await supabaseAdmin.from('businesses').select('*').eq('id', id).single();
 
     if(error){
         throw new AppError(error.message, 500);
@@ -53,19 +53,19 @@ router.patch('/businesses/:id/status', validate(updateBusinessStatusSchema), cat
 router.delete('/businesses/:id', validate(businessIdParamSchema), catchAsync(async (req, res) => {
     const { id } = req.validated.params;
 
-    const { data: businessData, error: businessError } = await supabase.from('businesses').select('owner_user_id').eq('id', id).single();
+    const { data: businessData, error: businessError } = await supabaseAdmin.from('businesses').select('owner_user_id').eq('id', id).single();
 
     if(businessError || !businessData){
         throw new AppError('Business not found', 404);
     }
 
-    const { error: bizError } = await supabase.from('businesses').delete().eq('id', id);
+    const { error: bizError } = await supabaseAdmin.from('businesses').delete().eq('id', id);
     if(bizError){
         throw new AppError(bizError.message, 500);
     }
 
     if(businessData.owner_user_id){
-        const { error: userError } = await supabase.from('users').delete().eq('user_id', businessData.owner_user_id);
+        const { error: userError } = await supabaseAdmin.from('users').delete().eq('user_id', businessData.owner_user_id);
         if(userError){
             throw new AppError(userError.message, 500);
         }
@@ -80,7 +80,7 @@ router.delete('/businesses/:id', validate(businessIdParamSchema), catchAsync(asy
 }))
 
 router.get('/users', catchAsync(async (req, res) => {
-    const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabaseAdmin.from('users').select('*').order('created_at', { ascending: false });
 
     if(error){
         throw new AppError(error.message, 500);
@@ -92,7 +92,7 @@ router.get('/users', catchAsync(async (req, res) => {
 router.get('/users/:id', validate(userIdParamSchema), catchAsync(async (req, res) => {
     const { id } = req.validated.params;
 
-    const { data, error } = await supabase.from('users').select('*').eq('user_id', id).single();
+    const { data, error } = await supabaseAdmin.from('users').select('*').eq('user_id', id).single();
 
     if(error){
         throw new AppError(error.message, 500);
@@ -108,7 +108,7 @@ router.delete('/users/:id', validate(userIdParamSchema), catchAsync(async (req, 
         throw new AppError('You cannot delete your own admin account', 400);
     }
 
-    const { data: targetUser, error: targetError } = await supabase
+    const { data: targetUser, error: targetError } = await supabaseAdmin
         .from('users')
         .select('account_type')
         .eq('user_id', id)
@@ -119,7 +119,7 @@ router.delete('/users/:id', validate(userIdParamSchema), catchAsync(async (req, 
     }
 
     if (targetUser.account_type === 'admin') {
-        const { count, error: countError } = await supabase
+        const { count, error: countError } = await supabaseAdmin
             .from('users')
             .select('*', { count: 'exact', head: true })
             .eq('account_type', 'admin');
@@ -133,7 +133,7 @@ router.delete('/users/:id', validate(userIdParamSchema), catchAsync(async (req, 
         }
     }
 
-    const { error: userError } = await supabase.from('users').delete().eq('user_id', id);
+    const { error: userError } = await supabaseAdmin.from('users').delete().eq('user_id', id);
     if (userError) {
         throw new AppError(userError.message, 500);
     }
@@ -148,13 +148,13 @@ router.delete('/users/:id', validate(userIdParamSchema), catchAsync(async (req, 
 
 
 router.get('/stats', catchAsync(async (req, res) => {
-    const { count: totalBusinesses, error: businessError } = await supabase.from('businesses').select('*', { count: 'exact', head: true });
+    const { count: totalBusinesses, error: businessError } = await supabaseAdmin.from('businesses').select('*', { count: 'exact', head: true });
 
     if(businessError){
         throw new AppError(businessError.message, 500);
     }
 
-    const { count: totalUsers, error: userError } = await supabase.from('users').select('*', { count: 'exact', head: true });
+    const { count: totalUsers, error: userError } = await supabaseAdmin.from('users').select('*', { count: 'exact', head: true });
 
     if(userError){
         throw new AppError(userError.message, 500);
@@ -162,7 +162,7 @@ router.get('/stats', catchAsync(async (req, res) => {
 
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const { count: newSignups, error: signupError } = await supabase.from('users').select('*', { count: 'exact', head: true }).gte('created_at', twentyFourHoursAgo);
+    const { count: newSignups, error: signupError } = await supabaseAdmin.from('users').select('*', { count: 'exact', head: true }).gte('created_at', twentyFourHoursAgo);
 
     if(signupError){
         throw new AppError(signupError.message, 500);

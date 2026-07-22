@@ -17,7 +17,7 @@ router.post('/signup/user', validate(signupUserSchema), catchAsync(async (req, r
     const { firstname, lastname, email, password, phone } = req.validated.body;
     const accountType = 'user';
 
-    const {data, error} = await supabase.auth.signUp({
+    const {data, error} = await supabaseAdmin.auth.signUp({
         email: email,
         password: password,
         options: {
@@ -32,7 +32,7 @@ router.post('/signup/user', validate(signupUserSchema), catchAsync(async (req, r
         throw new AppError(error.message, 500);
     }
 
-    const {data: userData, error: userError} = await supabase.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, email: email, phone: phone, account_type: accountType}).select();
+    const {data: userData, error: userError} = await supabaseAdmin.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, email: email, phone: phone, account_type: accountType}).select();
     
     if(userError){
         throw new AppError(userError.message, 500);
@@ -57,7 +57,7 @@ router.post('/admin/create-user/:account_type', authMiddleware, authAdminMiddlew
         throw new AppError(error.message, 500);
     }
 
-    const {data: userData, error: userError} = await supabase.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, email: email, phone: phone, account_type: accountType}).select();
+    const {data: userData, error: userError} = await supabaseAdmin.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, email: email, phone: phone, account_type: accountType}).select();
     
 
     if(userError){
@@ -72,7 +72,7 @@ router.post('/signup/business', validate(signupBusinessSchema), catchAsync(async
 
     const slug = businessname.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-    const {data, error} = await supabase.auth.signUp({
+    const {data, error} = await supabaseAdmin.auth.signUp({
         email: businessemail,
         password: password,
         options: {
@@ -87,7 +87,7 @@ router.post('/signup/business', validate(signupBusinessSchema), catchAsync(async
         throw new AppError(error.message, 500);
     }
 
-    const {data: userData, error: userError} = await supabase.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, phone: businessphone, email: businessemail, account_type: 'business'}).select();
+    const {data: userData, error: userError} = await supabaseAdmin.from('users').insert({user_id: data.user.id, first_name: firstname, last_name: lastname, phone: businessphone, email: businessemail, account_type: 'business'}).select();
 
     if(userError){
         throw new AppError(userError.message, 500);
@@ -111,7 +111,7 @@ router.post('/login', validate(loginSchema), catchAsync(async (req, res) => {
         throw new AppError(error.message, 401);
     }
 
-    const {data: userData, error: userError} = await supabase.from('users').select('account_type').eq('user_id', data.user.id).single();
+    const {data: userData, error: userError} = await supabaseAdmin.from('users').select('account_type').eq('user_id', data.user.id).single();
 
     if(userError){
         throw new AppError(userError.message, 500);

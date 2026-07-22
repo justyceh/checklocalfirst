@@ -1,5 +1,5 @@
 import express from 'express'
-import { supabase } from '../dbconnect.js'
+import { supabase, supabaseAdmin } from '../dbconnect.js'
 import { authMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { addFavoriteSchema, removeFavoriteParamSchema } from '../schemas/favoriteSchemas.js';
@@ -13,7 +13,7 @@ router.use(authMiddleware);
 router.get('/', catchAsync(async (req, res) => {
     const user_id = req.user.id;
 
-    const {data, error} = await supabase.from('favorites').select('*, businesses(*)').eq('user_id', user_id);
+    const {data, error} = await supabaseAdmin.from('favorites').select('*, businesses(*)').eq('user_id', user_id);
 
     if(error){
         throw new AppError(error.message, 500);
@@ -26,7 +26,7 @@ router.post('/', validate(addFavoriteSchema), catchAsync(async (req, res) => {
     const user_id = req.user.id;
     const { business_id } = req.validated.body;
 
-    const {data, error} = await supabase.from('favorites').insert({user_id, business_id});
+    const {data, error} = await supabaseAdmin.from('favorites').insert({user_id, business_id});
 
     if(error){
         throw new AppError(error.message, 500);
@@ -39,7 +39,7 @@ router.delete('/:business_id', validate(removeFavoriteParamSchema), catchAsync(a
     const user_id = req.user.id;
     const { business_id } = req.validated.params;
 
-    const {data, error} = await supabase.from('favorites').delete().eq('business_id', business_id).eq('user_id', user_id);
+    const {data, error} = await supabaseAdmin.from('favorites').delete().eq('business_id', business_id).eq('user_id', user_id);
 
     if(error){
         throw new AppError(error.message, 500);

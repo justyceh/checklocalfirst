@@ -1,5 +1,5 @@
 import express from 'express'
-import { supabase } from '../dbconnect.js'
+import { supabase, supabaseAdmin } from '../dbconnect.js'
 import { authMiddleware, authAdminMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { updateOwnUserSchema } from '../schemas/userSchemas.js';
@@ -11,7 +11,7 @@ const router = express.Router()
 
 router.get('/', authMiddleware, catchAsync(async (req, res) => {
 
-    const {data: userData, error: userError} = await supabase.from('users').select('account_type').eq('user_id', req.user.id).single();
+    const {data: userData, error: userError} = await supabaseAdmin.from('users').select('account_type').eq('user_id', req.user.id).single();
 
     if(userError){
         throw new AppError(userError.message, 500);
@@ -21,7 +21,7 @@ router.get('/', authMiddleware, catchAsync(async (req, res) => {
         throw new AppError('Unauthorized admins only', 403);
     }
 
-    const {data, error} = await supabase.from('users').select('*');
+    const {data, error} = await supabaseAdmin.from('users').select('*');
 
     if(error){
         throw new AppError(error.message, 500);
@@ -32,7 +32,7 @@ router.get('/', authMiddleware, catchAsync(async (req, res) => {
 
 
 router.get('/me', authMiddleware, catchAsync(async (req, res) => {
-    const {data, error} = await supabase.from('users').select('*').eq('user_id', req.user.id).single();
+    const {data, error} = await supabaseAdmin.from('users').select('*').eq('user_id', req.user.id).single();
 
     if(error){
         throw new AppError(error.message, 500);
@@ -44,7 +44,7 @@ router.get('/me', authMiddleware, catchAsync(async (req, res) => {
 router.put('/me', authMiddleware, validate(updateOwnUserSchema), catchAsync(async (req, res) => {
     const { first_name, last_name, email, phone } = req.validated.body;
 
-    const {data, error} = await supabase.from('users').update({first_name, last_name, email, phone}).eq('user_id', req.user.id);
+    const {data, error} = await supabaseAdmin.from('users').update({first_name, last_name, email, phone}).eq('user_id', req.user.id);
 
     if(error){
         throw new AppError(error.message, 500);
@@ -55,7 +55,7 @@ router.put('/me', authMiddleware, validate(updateOwnUserSchema), catchAsync(asyn
 
 router.get('/:id', authMiddleware, authAdminMiddleware, validate(userIdParamSchema), catchAsync(async (req, res) => {
     const { id } = req.validated.params;
-    const {data, error} = await supabase.from('users').select('*').eq('user_id', id).single();
+    const {data, error} = await supabaseAdmin.from('users').select('*').eq('user_id', id).single();
 
     if(error){
         throw new AppError(error.message, 500);

@@ -1,5 +1,5 @@
 import express from 'express'
-import { supabase } from '../dbconnect.js'
+import { supabase, supabaseAdmin } from '../dbconnect.js'
 import { authAdminMiddleware, authMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { createCategorySchema, categoryIdParamSchema } from '../schemas/categorySchemas.js';
@@ -21,7 +21,7 @@ router.get('/', catchAsync(async (req, res) => {
 router.post('/', authMiddleware, authAdminMiddleware, validate(createCategorySchema), catchAsync(async (req, res) => {
     const { name, slug } = req.validated.body;
 
-    const { data, error } = await supabase.from('categories').insert({ name, slug }).select().single();
+    const { data, error } = await supabaseAdmin.from('categories').insert({ name, slug }).select().single();
 
     if (error) {
         throw new AppError(error.message, 500);
@@ -33,7 +33,7 @@ router.post('/', authMiddleware, authAdminMiddleware, validate(createCategorySch
 router.delete('/:id', authMiddleware, authAdminMiddleware, validate(categoryIdParamSchema), catchAsync(async (req, res) => {
     const { id } = req.validated.params;
 
-    const { data, error } = await supabase.from('categories').delete().eq('id', id).select().single();
+    const { data, error } = await supabaseAdmin.from('categories').delete().eq('id', id).select().single();
 
     if (error) {
         if (error.code === '23503') {

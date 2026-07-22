@@ -1,9 +1,9 @@
 // helpers/verifyBusinessOwnership.js
-import { supabase } from '../dbconnect.js';
+import { supabase, supabaseAdmin } from '../dbconnect.js';
 import { AppError } from './AppError.js';
 
 export async function verifyBusinessOwnership(slug, userId) {
-    const { data: businessData, error: businessError } = await supabase
+    const { data: businessData, error: businessError } = await supabaseAdmin
         .from('businesses')
         .select('owner_user_id, id')
         .eq('slug', slug)

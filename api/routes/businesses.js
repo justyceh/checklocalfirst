@@ -26,7 +26,7 @@ router.get('/', catchAsync(async (req, res) => {
 }))
 
 router.get('/me', authMiddleware, catchAsync(async (req, res) => {
-    const { data, error } = await supabase.from('businesses').select('*').eq('owner_user_id', req.user.id).single();
+    const { data, error } = await supabaseAdmin.from('businesses').select('*').eq('owner_user_id', req.user.id).single();
 
     if(error){
         throw new AppError('Business not found', 404);
@@ -72,7 +72,7 @@ router.put('/:slug/services/:id', authMiddleware, validate(updateServiceSchema),
 
     await verifyBusinessOwnership(slug, req.user.id);
 
-    const {data, error} = await supabase.from('services').update({name, description, category_id}).eq('id', id);
+    const {data, error} = await supabaseAdmin.from('services').update({name, description, category_id}).eq('id', id);
 
     if(error){
         throw new AppError(error.message, 500);
@@ -87,7 +87,7 @@ router.post('/:slug/services', authMiddleware, validate(createServiceSchema), ca
 
     const businessData = await verifyBusinessOwnership(slug, req.user.id);
 
-    const {data, error} = await supabase.from('services').insert({business_id: businessData.id, name, description, category_id});
+    const {data, error} = await supabaseAdmin.from('services').insert({business_id: businessData.id, name, description, category_id});
 
     if(error){
         throw new AppError(error.message, 500);
@@ -101,7 +101,7 @@ router.delete('/:slug/services/:id', authMiddleware, validate(serviceIdParamSche
 
     await verifyBusinessOwnership(slug, req.user.id);
 
-    const {data, error} = await supabase.from('services').delete().eq('id', id);
+    const {data, error} = await supabaseAdmin.from('services').delete().eq('id', id);
 
     if(error){
         throw new AppError(error.message, 500);
@@ -116,7 +116,7 @@ router.put('/:slug', authMiddleware, validate(updateBusinessSchema), catchAsync(
 
     const businessData = await verifyBusinessOwnership(slug, req.user.id);
 
-    const {data, error} = await supabase.from('businesses').update({name, description, address, city, state, zip, phone, email}).eq('slug', slug);
+    const {data, error} = await supabaseAdmin.from('businesses').update({name, description, address, city, state, zip, phone, email}).eq('slug', slug);
 
     if(error){
         throw new AppError(error.message, 500);
@@ -130,13 +130,13 @@ router.delete('/:slug', authMiddleware, validate(businessSlugParamSchema), catch
 
     const businessData = await verifyBusinessOwnership(slug, req.user.id);
 
-    const {error: servicesError} = await supabase.from('services').delete().eq('business_id', businessData.id);
+    const {error: servicesError} = await supabaseAdmin.from('services').delete().eq('business_id', businessData.id);
     if(servicesError) throw new AppError(servicesError.message, 500);
 
-    const {error: bizError} = await supabase.from('businesses').delete().eq('slug', slug);
+    const {error: bizError} = await supabaseAdmin.from('businesses').delete().eq('slug', slug);
     if(bizError) throw new AppError(bizError.message, 500);
 
-    const {error: userError} = await supabase.from('users').delete().eq('user_id', businessData.owner_user_id);
+    const {error: userError} = await supabaseAdmin.from('users').delete().eq('user_id', businessData.owner_user_id);
     if(userError) throw new AppError(userError.message, 500);
 
     const {error: authError} = await supabaseAdmin.auth.admin.deleteUser(businessData.owner_user_id);
