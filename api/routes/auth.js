@@ -93,7 +93,7 @@ router.post('/signup/business', validate(signupBusinessSchema), catchAsync(async
         throw new AppError(userError.message, 500);
     }
 
-    const {data: businessData, error: businessError} = await supabase.from('businesses').insert({owner_user_id: data.user.id, name: businessname, description: businessdescription, address: businessaddress, city: city, state: state, zip: zip, phone: businessphone, email: businessemail, slug: slug}).select();
+    const {data: businessData, error: businessError} = await supabaseAdmin.from('businesses').insert({owner_user_id: data.user.id, name: businessname, description: businessdescription, address: businessaddress, city: city, state: state, zip: zip, phone: businessphone, email: businessemail, slug: slug}).select();
 
     if(businessError){
         throw new AppError(businessError.message, 500);
