@@ -11,12 +11,14 @@ import landingRouter from './routes/signups.js'
 import cors from 'cors'
 import { errorHandler } from './middleware/errorHandler.js'
 import { generalLimiter } from './middleware/rateLimiter.js'
+import helmet from 'helmet'
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
 app.use(generalLimiter)
+app.use(helmet)
 
 
 app.get('/', (req, res) => {
