@@ -5,6 +5,7 @@ import { validate } from '../middleware/validate.js'
 import { signupUserSchema, signupBusinessSchema, loginSchema, adminCreateUserSchema } from '../schemas/authSchemas.js'
 import { catchAsync } from '../helpers/catchAsync.js';
 import { AppError } from '../helpers/AppError.js';
+import { authLimiter } from '../middleware/rateLimiter.js'
 
 const router = express.Router()
 
@@ -13,7 +14,7 @@ router.get('/', (req, res) => {
     res.send("Authentication Route");
 })
 
-router.post('/signup/user', validate(signupUserSchema), catchAsync(async (req, res) => {
+router.post('/signup/user', authLimiter, validate(signupUserSchema), catchAsync(async (req, res) => {
     const { firstname, lastname, email, password, phone } = req.validated.body;
     const accountType = 'user';
 
@@ -67,7 +68,7 @@ router.post('/admin/create-user/:account_type', authMiddleware, authAdminMiddlew
     res.status(201).json({ success: true, message: 'User succesfully created' });
 }))
 
-router.post('/signup/business', validate(signupBusinessSchema), catchAsync(async (req, res) => {
+router.post('/signup/business', authLimiter, validate(signupBusinessSchema), catchAsync(async (req, res) => {
     const { name: businessname, description: businessdescription, address: businessaddress, email: businessemail, phone: businessphone, state, city, zip, firstname, lastname, password } = req.validated.body;
 
     const slug = businessname.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -102,7 +103,7 @@ router.post('/signup/business', validate(signupBusinessSchema), catchAsync(async
     return res.status(201).json({ success: true, message: 'User and Business account successfully created' });
 }))
 
-router.post('/login', validate(loginSchema), catchAsync(async (req, res) => {
+router.post('/login', authLimiter, validate(loginSchema), catchAsync(async (req, res) => {
     const { email, password } = req.validated.body;
 
     const {data, error} = await supabase.auth.signInWithPassword({email: email, password: password});

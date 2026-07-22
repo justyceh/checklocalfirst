@@ -10,11 +10,13 @@ import adminRouter from './routes/admin.js'
 import landingRouter from './routes/signups.js'
 import cors from 'cors'
 import { errorHandler } from './middleware/errorHandler.js'
+import { generalLimiter } from './middleware/rateLimiter.js'
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
+app.use(generalLimiter)
 
 
 app.get('/', (req, res) => {
