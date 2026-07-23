@@ -2,7 +2,7 @@ import express from 'express'
 import { supabaseAdmin, supabase } from '../dbconnect.js'
 import { authAdminMiddleware, authMiddleware } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
-import { signupUserSchema, signupBusinessSchema, loginSchema, adminCreateUserSchema } from '../schemas/authSchemas.js'
+import { signupUserSchema, signupBusinessSchema, loginSchema, adminCreateUserSchema, adminCreateComppedBusinessSchema, adminCreateComppedUserSchema } from '../schemas/authSchemas.js'
 import { catchAsync } from '../helpers/catchAsync.js';
 import { AppError } from '../helpers/AppError.js';
 import { authLimiter } from '../middleware/rateLimiter.js'
